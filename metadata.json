@@ -1,0 +1,5 @@
+{
+  "name": "Badal TV Eye Chart",
+  "description": "An eye testing application designed for large screens like Android TVs. It features Snellen (English), Hindi, and Landolt C charts to help assess visual acuity. The interface is optimized for remote control navigation with high-contrast visuals.",
+  "requestFramePermissions": []
+}
