@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { ChartType } from '../types';
 
 interface LandingPageProps {
@@ -25,52 +25,63 @@ const ChartCard = React.forwardRef<HTMLButtonElement, ChartCardProps>(
   )
 );
 
+const chartOptions = [
+  { type: ChartType.Snellen, title: 'English', character: 'A', fontClass: 'font-serif' },
+  { type: ChartType.Hindi, title: 'Hindi', character: 'र', fontClass: '' },
+  { type: ChartType.EChart, title: 'E Chart', character: 'E', fontClass: 'font-serif' },
+];
+
 const LandingPage: React.FC<LandingPageProps> = ({ onSelectChart }) => {
   const [focusedCardIndex, setFocusedCardIndex] = useState(0);
   const cardRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
+  // Set focus when index changes
   useEffect(() => {
     cardRefs.current[focusedCardIndex]?.focus();
   }, [focusedCardIndex]);
   
+  // Set initial focus on the first language option
   useEffect(() => {
-    // Focus the first card on mount
     cardRefs.current[0]?.focus();
   }, []);
 
-  const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
-    if (event.key === 'ArrowRight') {
-      setFocusedCardIndex(prev => Math.min(prev + 1, 2));
-    } else if (event.key === 'ArrowLeft') {
-      setFocusedCardIndex(prev => Math.max(prev - 1, 0));
-    }
+  // Handle remote control navigation
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // We only want to handle left and right arrows here
+      if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
+        event.preventDefault(); // Prevent browser from scrolling or changing focus
+        if (event.key === 'ArrowRight') {
+          setFocusedCardIndex(prev => (prev + 1) % chartOptions.length);
+        } else if (event.key === 'ArrowLeft') {
+          setFocusedCardIndex(prev => (prev - 1 + chartOptions.length) % chartOptions.length);
+        }
+      }
+      // The 'Enter' key press is automatically handled by the browser,
+      // which triggers the 'onClick' event on the focused button.
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
   }, []);
 
 
   return (
-    <div className="bg-white text-black h-screen w-screen flex flex-col items-center justify-center font-sans overflow-hidden p-8" onKeyDown={handleKeyDown}>
-      <h1 className="text-5xl md:text-7xl mb-16 font-bold text-center">Select Eye Chart</h1>
+    <div className="bg-white text-black h-screen w-screen flex flex-col items-center justify-center font-sans overflow-hidden p-8">
+      <h1 className="text-5xl md:text-7xl mb-16 font-bold text-center">Bharat Optical Works</h1>
       <div className="flex flex-col md:flex-row items-center justify-center gap-8 md:gap-16">
-        <ChartCard
-          ref={el => cardRefs.current[0] = el}
-          title="English"
-          character="A"
-          fontClass="font-serif"
-          onClick={() => onSelectChart(ChartType.Snellen)}
-        />
-        <ChartCard
-          ref={el => cardRefs.current[1] = el}
-          title="Hindi"
-          character="र"
-          onClick={() => onSelectChart(ChartType.Hindi)}
-        />
-        <ChartCard
-          ref={el => cardRefs.current[2] = el}
-          title="E Chart"
-          character="E"
-          fontClass="font-serif"
-          onClick={() => onSelectChart(ChartType.EChart)}
-        />
+        {chartOptions.map((chart, index) => (
+          <ChartCard
+            key={chart.type}
+            ref={el => cardRefs.current[index] = el}
+            title={chart.title}
+            character={chart.character}
+            fontClass={chart.fontClass}
+            onClick={() => onSelectChart(chart.type)}
+          />
+        ))}
       </div>
     </div>
   );
