@@ -198,6 +198,7 @@ const App: React.FC = () => {
             setFocusedControlIndex(prev => (prev - 1 + controlRefs.length) % controlRefs.length);
             break;
           case 'Enter':
+          case ' ': // Handle space key as select
             event.preventDefault();
             const targetRef = controlRefs[focusedControlIndex];
             targetRef?.current?.click();

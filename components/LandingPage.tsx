@@ -58,6 +58,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onSelectChart }) => {
           setFocusedCardIndex(prev => (prev - 1 + chartOptions.length) % chartOptions.length);
           break;
         case 'Enter':
+        case ' ': // Handle space key as select
           event.preventDefault();
           const focusedButton = cardRefs.current[focusedCardIndex];
           if (focusedButton) {
