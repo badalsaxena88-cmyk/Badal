@@ -6,12 +6,13 @@ interface EyeChartProps {
   line: ChartLine;
   isSingleLetterMode: boolean;
   singleLetterIndex: number;
+  isFullscreen: boolean;
 }
 
 const rotations = ['rotate-0', 'rotate-90', 'rotate-180', '-rotate-90'];
 const getRandomRotation = () => rotations[Math.floor(Math.random() * rotations.length)];
 
-const EyeChart: React.FC<EyeChartProps> = ({ chartType, line, isSingleLetterMode, singleLetterIndex }) => {
+const EyeChart: React.FC<EyeChartProps> = ({ chartType, line, isSingleLetterMode, singleLetterIndex, isFullscreen }) => {
   const [eRotations, setERotations] = useState<string[]>([]);
 
   useEffect(() => {
@@ -29,7 +30,7 @@ const EyeChart: React.FC<EyeChartProps> = ({ chartType, line, isSingleLetterMode
       
       const isEChart = chartType === ChartType.EChart;
       const originalIndex = index + letterKeyOffset;
-      const transformClass = isEChart ? eRotations[originalIndex] : '';
+      const transformClass = isEChart ? eRotations[originalIndex] || '' : '';
       
       return (
         <span
@@ -50,9 +51,11 @@ const EyeChart: React.FC<EyeChartProps> = ({ chartType, line, isSingleLetterMode
       >
         {chartContent}
       </div>
-      <div className="absolute top-4 left-4 bg-gray-100 text-black px-4 py-2 rounded-lg text-2xl md:text-3xl font-mono">
-        {line.acuity}
-      </div>
+      {!isFullscreen && (
+        <div className="absolute top-4 left-4 bg-gray-100 text-black px-4 py-2 rounded-lg text-2xl md:text-3xl font-mono">
+          {line.acuity}
+        </div>
+      )}
     </div>
   );
 };

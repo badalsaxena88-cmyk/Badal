@@ -11,6 +11,7 @@ const App: React.FC = () => {
   const [currentLineIndex, setCurrentLineIndex] = useState(0);
   const [isSingleLetterMode, setIsSingleLetterMode] = useState(false);
   const [singleLetterIndex, setSingleLetterIndex] = useState(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const handleSelectChart = (type: ChartType) => {
     setChartType(type);
@@ -21,8 +22,31 @@ const App: React.FC = () => {
   };
   
   const handleGoHome = () => {
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    }
     setView('landing');
   };
+
+  const handleToggleFullscreen = useCallback(() => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch((err) => {
+        console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+      });
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    const onFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', onFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
+  }, []);
 
   const getChartData = () => {
     switch (chartType) {
@@ -108,6 +132,11 @@ const App: React.FC = () => {
           event.preventDefault();
           handleToggleSingleLetterMode();
           break;
+        case 'f':
+        case 'F':
+            event.preventDefault();
+            handleToggleFullscreen();
+            break;
         default:
           break;
       }
@@ -118,7 +147,7 @@ const App: React.FC = () => {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [view, isSingleLetterMode, handleLineChange, handleLetterIndexChange, handleToggleSingleLetterMode, currentLine.letters.length]);
+  }, [view, isSingleLetterMode, handleLineChange, handleLetterIndexChange, handleToggleSingleLetterMode, currentLine.letters.length, handleToggleFullscreen]);
 
   if (view === 'landing') {
     return <LandingPage onSelectChart={handleSelectChart} />;
@@ -132,21 +161,26 @@ const App: React.FC = () => {
           line={currentLine}
           isSingleLetterMode={isSingleLetterMode}
           singleLetterIndex={singleLetterIndex}
+          isFullscreen={isFullscreen}
         />
       </div>
-      <Controls
-        currentChart={chartType}
-        onChartChange={handleChartTypeChange}
-        onLineChange={handleLineChange}
-        isMinLine={currentLineIndex === 0}
-        isMaxLine={currentLineIndex === chartData.length - 1}
-        isSingleLetterMode={isSingleLetterMode}
-        onToggleSingleLetterMode={handleToggleSingleLetterMode}
-        onLetterIndexChange={handleLetterIndexChange}
-        isMinLetter={singleLetterIndex === 0}
-        isMaxLetter={currentLine.letters.length === 0 || singleLetterIndex === currentLine.letters.length - 1}
-        onGoHome={handleGoHome}
-      />
+      {!isFullscreen && (
+        <Controls
+          currentChart={chartType}
+          onChartChange={handleChartTypeChange}
+          onLineChange={handleLineChange}
+          isMinLine={currentLineIndex === 0}
+          isMaxLine={currentLineIndex === chartData.length - 1}
+          isSingleLetterMode={isSingleLetterMode}
+          onToggleSingleLetterMode={handleToggleSingleLetterMode}
+          onLetterIndexChange={handleLetterIndexChange}
+          isMinLetter={singleLetterIndex === 0}
+          isMaxLetter={currentLine.letters.length === 0 || singleLetterIndex === currentLine.letters.length - 1}
+          onGoHome={handleGoHome}
+          isFullscreen={isFullscreen}
+          onToggleFullscreen={handleToggleFullscreen}
+        />
+      )}
     </main>
   );
 };

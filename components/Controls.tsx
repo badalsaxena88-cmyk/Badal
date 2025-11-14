@@ -1,6 +1,6 @@
 import React from 'react';
 import { ChartType } from '../types';
-import { PlusIcon, MinusIcon, HomeIcon } from './icons';
+import { PlusIcon, MinusIcon, HomeIcon, FullscreenIcon, ExitFullscreenIcon } from './icons';
 
 interface ControlsProps {
   currentChart: ChartType;
@@ -14,6 +14,8 @@ interface ControlsProps {
   isMinLetter: boolean;
   isMaxLetter: boolean;
   onGoHome: () => void;
+  isFullscreen: boolean;
+  onToggleFullscreen: () => void;
 }
 
 const ChartButton: React.FC<{
@@ -34,19 +36,19 @@ const ChartButton: React.FC<{
   </button>
 );
 
-const ControlButton: React.FC<{
-    direction: 'increase' | 'decrease';
-    onClick: (direction: 'increase' | 'decrease') => void;
-    disabled: boolean;
+const IconButton: React.FC<{
+    onClick: () => void;
+    disabled?: boolean;
     ariaLabel: string;
-}> = ({ direction, onClick, disabled, ariaLabel }) => (
+    children: React.ReactNode;
+}> = ({ onClick, disabled = false, ariaLabel, children }) => (
     <button
-        onClick={() => onClick(direction)}
+        onClick={onClick}
         disabled={disabled}
         className="p-3 md:p-4 bg-gray-200 rounded-full text-black transition-colors duration-200 focus:outline-none focus:ring-4 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed hover:enabled:bg-gray-300"
         aria-label={ariaLabel}
     >
-        {direction === 'increase' ? <PlusIcon /> : <MinusIcon />}
+        {children}
     </button>
 );
 
@@ -62,7 +64,9 @@ const Controls: React.FC<ControlsProps> = ({
   onLetterIndexChange,
   isMinLetter,
   isMaxLetter,
-  onGoHome
+  onGoHome,
+  isFullscreen,
+  onToggleFullscreen,
 }) => {
   return (
     <div className="w-full bg-gray-100/80 backdrop-blur-sm p-4 sticky bottom-0">
@@ -90,17 +94,28 @@ const Controls: React.FC<ControlsProps> = ({
                 {isSingleLetterMode && (
                     <div className="flex items-center gap-4">
                         <span className="hidden md:inline text-lg md:text-xl font-semibold text-gray-700">Letter</span>
-                        <ControlButton direction="decrease" onClick={onLetterIndexChange} disabled={isMinLetter} ariaLabel="Previous letter" />
-                        <ControlButton direction="increase" onClick={onLetterIndexChange} disabled={isMaxLetter} ariaLabel="Next letter" />
+                        <IconButton onClick={() => onLetterIndexChange('decrease')} disabled={isMinLetter} ariaLabel="Previous letter">
+                            <MinusIcon />
+                        </IconButton>
+                        <IconButton onClick={() => onLetterIndexChange('increase')} disabled={isMaxLetter} ariaLabel="Next letter">
+                            <PlusIcon />
+                        </IconButton>
                     </div>
                 )}
                 
                 {/* Size Controls */}
                 <div className="flex items-center gap-4">
                     <span className="hidden md:inline text-lg md:text-xl font-semibold text-gray-700">Size</span>
-                    <ControlButton direction="decrease" onClick={onLineChange} disabled={isMinLine} ariaLabel="Decrease size" />
-                    <ControlButton direction="increase" onClick={onLineChange} disabled={isMaxLine} ariaLabel="Increase size" />
+                    <IconButton onClick={() => onLineChange('decrease')} disabled={isMinLine} ariaLabel="Decrease size">
+                        <MinusIcon />
+                    </IconButton>
+                    <IconButton onClick={() => onLineChange('increase')} disabled={isMaxLine} ariaLabel="Increase size">
+                        <PlusIcon />
+                    </IconButton>
                 </div>
+                <IconButton onClick={onToggleFullscreen} ariaLabel={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}>
+                    {isFullscreen ? <ExitFullscreenIcon /> : <FullscreenIcon />}
+                </IconButton>
             </div>
         </div>
       </div>
