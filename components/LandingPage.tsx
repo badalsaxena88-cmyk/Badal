@@ -48,24 +48,32 @@ const LandingPage: React.FC<LandingPageProps> = ({ onSelectChart }) => {
   // Handle remote control navigation
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      // We only want to handle left and right arrows here
-      if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
-        event.preventDefault(); // Prevent browser from scrolling or changing focus
-        if (event.key === 'ArrowRight') {
+      switch (event.key) {
+        case 'ArrowRight':
+          event.preventDefault();
           setFocusedCardIndex(prev => (prev + 1) % chartOptions.length);
-        } else if (event.key === 'ArrowLeft') {
+          break;
+        case 'ArrowLeft':
+          event.preventDefault();
           setFocusedCardIndex(prev => (prev - 1 + chartOptions.length) % chartOptions.length);
-        }
+          break;
+        case 'Enter':
+          event.preventDefault();
+          const focusedButton = cardRefs.current[focusedCardIndex];
+          if (focusedButton) {
+            focusedButton.click();
+          }
+          break;
+        default:
+          break;
       }
-      // The 'Enter' key press is automatically handled by the browser,
-      // which triggers the 'onClick' event on the focused button.
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, []);
+  }, [focusedCardIndex]);
 
 
   return (

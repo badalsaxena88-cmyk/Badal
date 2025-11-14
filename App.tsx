@@ -198,7 +198,9 @@ const App: React.FC = () => {
             setFocusedControlIndex(prev => (prev - 1 + controlRefs.length) % controlRefs.length);
             break;
           case 'Enter':
-             // Let default behavior trigger click on focused element
+            event.preventDefault();
+            const targetRef = controlRefs[focusedControlIndex];
+            targetRef?.current?.click();
             break;
           default:
             break;
@@ -210,7 +212,7 @@ const App: React.FC = () => {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [view, chartMode, isSingleLetterMode, handleLineChange, handleLetterIndexChange, handleToggleSingleLetterMode, isFullscreen, handleToggleFullscreen, getControlRefs]);
+  }, [view, chartMode, isSingleLetterMode, handleLineChange, handleLetterIndexChange, handleToggleSingleLetterMode, isFullscreen, handleToggleFullscreen, getControlRefs, focusedControlIndex]);
 
   // Effect to manage focus on controls
   useEffect(() => {
