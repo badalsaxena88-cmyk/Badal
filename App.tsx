@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { ChartType } from './types';
 import EyeChart from './components/EyeChart';
 import Controls from './components/Controls';
@@ -12,6 +12,29 @@ const App: React.FC = () => {
   const [isSingleLetterMode, setIsSingleLetterMode] = useState(false);
   const [singleLetterIndex, setSingleLetterIndex] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [chartMode, setChartMode] = useState<'display' | 'controls'>('display');
+  const [focusedControlIndex, setFocusedControlIndex] = useState(0);
+
+  // Refs for all focusable controls
+  const homeRef = useRef<HTMLButtonElement>(null);
+  const snellenRef = useRef<HTMLButtonElement>(null);
+  const hindiRef = useRef<HTMLButtonElement>(null);
+  const eChartRef = useRef<HTMLButtonElement>(null);
+  const letterMinusRef = useRef<HTMLButtonElement>(null);
+  const letterPlusRef = useRef<HTMLButtonElement>(null);
+  const sizeMinusRef = useRef<HTMLButtonElement>(null);
+  const sizePlusRef = useRef<HTMLButtonElement>(null);
+  const fullscreenRef = useRef<HTMLButtonElement>(null);
+
+  const getControlRefs = useCallback(() => {
+    const refs = [homeRef, snellenRef, hindiRef, eChartRef];
+    if (isSingleLetterMode) {
+      refs.push(letterMinusRef, letterPlusRef);
+    }
+    refs.push(sizeMinusRef, sizePlusRef, fullscreenRef);
+    return refs.map(ref => ref.current ? ref : null).filter(Boolean);
+  }, [isSingleLetterMode]);
+
 
   const handleSelectChart = (type: ChartType) => {
     setChartType(type);
@@ -19,6 +42,7 @@ const App: React.FC = () => {
     setIsSingleLetterMode(false);
     setSingleLetterIndex(0);
     setView('chart');
+    setChartMode('display');
   };
   
   const handleGoHome = () => {
@@ -26,6 +50,7 @@ const App: React.FC = () => {
       document.exitFullscreen();
     }
     setView('landing');
+    setChartMode('display');
   };
 
   const handleToggleFullscreen = useCallback(() => {
@@ -42,7 +67,11 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const onFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
+      const isFs = !!document.fullscreenElement;
+      setIsFullscreen(isFs);
+      if (isFs) {
+        setChartMode('display'); // Force display mode in fullscreen
+      }
     };
     document.addEventListener('fullscreenchange', onFullscreenChange);
     return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
@@ -72,20 +101,20 @@ const App: React.FC = () => {
         return Math.max(prevIndex - 1, 0);
       }
     });
-    setSingleLetterIndex(0); // Reset letter index when line changes
-    setIsSingleLetterMode(false); // Always show full line when size changes
+    setSingleLetterIndex(0);
+    setIsSingleLetterMode(false);
   }, [chartData.length]);
 
   const handleChartTypeChange = useCallback((type: ChartType) => {
     setChartType(type);
-    setCurrentLineIndex(0); // Reset to the first line when chart changes
-    setSingleLetterIndex(0); // Reset letter index when chart changes
-    setIsSingleLetterMode(false); // Also reset single letter mode
+    setCurrentLineIndex(0);
+    setSingleLetterIndex(0);
+    setIsSingleLetterMode(false);
   }, []);
 
   const handleToggleSingleLetterMode = useCallback(() => {
     setIsSingleLetterMode(prev => !prev);
-    setSingleLetterIndex(0); // Reset letter index when toggling mode
+    setSingleLetterIndex(0);
   }, []);
 
   const handleLetterIndexChange = useCallback((direction: 'increase' | 'decrease') => {
@@ -97,57 +126,107 @@ const App: React.FC = () => {
       }
     });
   }, [currentLine.letters.length]);
+  
+  // When single letter mode changes, reset focus in controls mode to avoid focus errors
+  useEffect(() => {
+    if (chartMode === 'controls') {
+      setFocusedControlIndex(0);
+    }
+  }, [isSingleLetterMode, chartMode]);
+
 
   useEffect(() => {
     if (view !== 'chart') return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      switch (event.key) {
-        case 'ArrowUp':
-          event.preventDefault();
-          handleLineChange('decrease'); // Decrease index = larger font size
-          break;
-        case 'ArrowDown':
-          event.preventDefault();
-          handleLineChange('increase'); // Increase index = smaller font size
-          break;
-        case 'ArrowLeft':
-          event.preventDefault();
-          if (isSingleLetterMode) {
-            handleLetterIndexChange('decrease');
-          } else {
-            setIsSingleLetterMode(true);
-            setSingleLetterIndex(currentLine.letters.length > 0 ? currentLine.letters.length - 1 : 0);
-          }
-          break;
-        case 'ArrowRight':
-          event.preventDefault();
-          if (isSingleLetterMode) {
-            handleLetterIndexChange('increase');
-          } else {
-            handleToggleSingleLetterMode(); // Activates mode and sets index to 0
-          }
-          break;
-        case 'Enter':
-          event.preventDefault();
-          handleToggleSingleLetterMode();
-          break;
-        case 'f':
-        case 'F':
+      if (chartMode === 'display') {
+        switch (event.key) {
+          case 'ArrowUp':
+            event.preventDefault();
+            handleLineChange('decrease');
+            break;
+          case 'ArrowDown':
+            event.preventDefault();
+            handleLineChange('increase');
+            break;
+          case 'ArrowLeft':
+            if (isSingleLetterMode) {
+              event.preventDefault();
+              handleLetterIndexChange('decrease');
+            }
+            break;
+          case 'ArrowRight':
+            if (isSingleLetterMode) {
+              event.preventDefault();
+              handleLetterIndexChange('increase');
+            }
+            break;
+          case 'Enter':
+            event.preventDefault();
+            handleToggleSingleLetterMode();
+            break;
+          case 'f':
+          case 'F':
             event.preventDefault();
             handleToggleFullscreen();
             break;
-        default:
-          break;
+          case 'Escape':
+            event.preventDefault();
+            if (!isFullscreen) {
+              setChartMode('controls');
+              setFocusedControlIndex(0);
+            }
+            break;
+          default:
+            break;
+        }
+      } else { // chartMode === 'controls'
+        const controlRefs = getControlRefs();
+        if (controlRefs.length === 0) return;
+
+        switch (event.key) {
+          case 'Escape':
+            event.preventDefault();
+            setChartMode('display');
+            break;
+          case 'ArrowRight':
+            event.preventDefault();
+            setFocusedControlIndex(prev => (prev + 1) % controlRefs.length);
+            break;
+          case 'ArrowLeft':
+            event.preventDefault();
+            setFocusedControlIndex(prev => (prev - 1 + controlRefs.length) % controlRefs.length);
+            break;
+          case 'Enter':
+             // Let default behavior trigger click on focused element
+            break;
+          default:
+            break;
+        }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
-
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [view, isSingleLetterMode, handleLineChange, handleLetterIndexChange, handleToggleSingleLetterMode, currentLine.letters.length, handleToggleFullscreen]);
+  }, [view, chartMode, isSingleLetterMode, handleLineChange, handleLetterIndexChange, handleToggleSingleLetterMode, isFullscreen, handleToggleFullscreen, getControlRefs]);
+
+  // Effect to manage focus on controls
+  useEffect(() => {
+    if (view === 'chart' && chartMode === 'controls') {
+      const controlRefs = getControlRefs();
+      const targetRef = controlRefs[focusedControlIndex];
+      targetRef?.current?.focus();
+    } else if (view === 'chart' && chartMode === 'display') {
+       const activeElement = document.activeElement as HTMLElement;
+       const controlsContainer = document.querySelector('.controls-container');
+       if (activeElement && controlsContainer?.contains(activeElement)) {
+          activeElement.blur();
+       }
+    }
+  }, [view, chartMode, focusedControlIndex, getControlRefs]);
+
 
   if (view === 'landing') {
     return <LandingPage onSelectChart={handleSelectChart} />;
@@ -179,6 +258,15 @@ const App: React.FC = () => {
           onGoHome={handleGoHome}
           isFullscreen={isFullscreen}
           onToggleFullscreen={handleToggleFullscreen}
+          homeRef={homeRef}
+          snellenRef={snellenRef}
+          hindiRef={hindiRef}
+          eChartRef={eChartRef}
+          letterMinusRef={letterMinusRef}
+          letterPlusRef={letterPlusRef}
+          sizeMinusRef={sizeMinusRef}
+          sizePlusRef={sizePlusRef}
+          fullscreenRef={fullscreenRef}
         />
       )}
     </main>
