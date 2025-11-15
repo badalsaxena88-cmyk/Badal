@@ -1,6 +1,6 @@
 import React from 'react';
 import { ChartType } from '../types';
-import { PlusIcon, MinusIcon, HomeIcon, FullscreenIcon, ExitFullscreenIcon, ResetIcon } from './icons';
+import { ArrowDownIcon, ArrowLeftIcon, ArrowRightIcon, ArrowUpIcon, HomeIcon, FullscreenIcon, ExitFullscreenIcon, ResetIcon } from './icons';
 
 interface ControlsProps {
   currentChart: ChartType;
@@ -133,7 +133,7 @@ const Controls: React.FC<ControlsProps> = ({
                     disabled={isMinLine}
                     ariaLabel={'Larger letters (previous line)'}
                 >
-                    <PlusIcon />
+                    <ArrowUpIcon />
                 </IconButton>
                 <IconButton
                     ref={sizeMinusRef}
@@ -141,7 +141,7 @@ const Controls: React.FC<ControlsProps> = ({
                     disabled={isMaxLine}
                     ariaLabel={'Smaller letters (next line)'}
                 >
-                    <MinusIcon />
+                    <ArrowDownIcon />
                 </IconButton>
             </div>
             
@@ -153,7 +153,7 @@ const Controls: React.FC<ControlsProps> = ({
                     disabled={!isSingleLetterMode || isAtFirstLetter}
                     ariaLabel={'Previous letter'}
                 >
-                    <MinusIcon />
+                    <ArrowLeftIcon />
                 </IconButton>
                 <IconButton
                     ref={letterNextRef}
@@ -161,7 +161,7 @@ const Controls: React.FC<ControlsProps> = ({
                     disabled={isSingleLetterMode && isAtLastLetter}
                     ariaLabel={isSingleLetterMode ? 'Next letter' : 'Switch to single letter view'}
                 >
-                    <PlusIcon />
+                    <ArrowRightIcon />
                 </IconButton>
             </div>
 

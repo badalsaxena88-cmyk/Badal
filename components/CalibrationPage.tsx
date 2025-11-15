@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { PlusIcon, MinusIcon, BackIcon, CheckIcon } from './icons';
+import { ArrowUpIcon, ArrowDownIcon, BackIcon, CheckIcon } from './icons';
 
 interface CalibrationPageProps {
   onCalibrationComplete: (pixelsPerMm: number) => void;
@@ -107,7 +107,7 @@ const CalibrationPage: React.FC<CalibrationPageProps> = ({ onCalibrationComplete
           className="p-4 bg-gray-200 rounded-full text-black transition-colors duration-200 focus:outline-none focus:ring-4 focus:ring-blue-500 hover:bg-gray-300"
           aria-label="Decrease size"
         >
-          <MinusIcon />
+          <ArrowDownIcon />
         </button>
         <button
           ref={plusRef}
@@ -115,7 +115,7 @@ const CalibrationPage: React.FC<CalibrationPageProps> = ({ onCalibrationComplete
           className="p-4 bg-gray-200 rounded-full text-black transition-colors duration-200 focus:outline-none focus:ring-4 focus:ring-blue-500 hover:bg-gray-300"
           aria-label="Increase size"
         >
-          <PlusIcon />
+          <ArrowUpIcon />
         </button>
 
         <button
