@@ -3,10 +3,12 @@ import { ChartType } from './types';
 import EyeChart from './components/EyeChart';
 import Controls from './components/Controls';
 import LandingPage from './components/LandingPage';
-import { SNELLEN_CHART, HINDI_CHART, E_CHART } from './constants';
+import CalibrationPage from './components/CalibrationPage';
+import { SNELLEN_CHART, HINDI_CHART, C_CHART } from './constants';
+import VirtualCursor from './components/VirtualCursor';
 
 const App: React.FC = () => {
-  const [view, setView] = useState<'landing' | 'chart'>('landing');
+  const [view, setView] = useState<'landing' | 'chart' | 'calibration'>('landing');
   const [chartType, setChartType] = useState<ChartType>(ChartType.Snellen);
   const [currentLineIndex, setCurrentLineIndex] = useState(0);
   const [isSingleLetterMode, setIsSingleLetterMode] = useState(false);
@@ -14,26 +16,48 @@ const App: React.FC = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [chartMode, setChartMode] = useState<'display' | 'controls'>('display');
   const [focusedControlIndex, setFocusedControlIndex] = useState(0);
+  const [pixelsPerMm, setPixelsPerMm] = useState<number>(2.7); // Default for ~70 PPI TV
+  const [isMouseMode, setIsMouseMode] = useState(false);
+  const [cursorPosition, setCursorPosition] = useState({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
+
+  useEffect(() => {
+    const storedPpmm = localStorage.getItem('pixelsPerMm');
+    if (storedPpmm) {
+      setPixelsPerMm(parseFloat(storedPpmm));
+    }
+  }, []);
 
   // Refs for all focusable controls
   const homeRef = useRef<HTMLButtonElement>(null);
   const snellenRef = useRef<HTMLButtonElement>(null);
   const hindiRef = useRef<HTMLButtonElement>(null);
-  const eChartRef = useRef<HTMLButtonElement>(null);
-  const letterMinusRef = useRef<HTMLButtonElement>(null);
-  const letterPlusRef = useRef<HTMLButtonElement>(null);
+  const cChartRef = useRef<HTMLButtonElement>(null);
+  const lineViewRef = useRef<HTMLButtonElement>(null);
+  const letterViewRef = useRef<HTMLButtonElement>(null);
   const sizeMinusRef = useRef<HTMLButtonElement>(null);
   const sizePlusRef = useRef<HTMLButtonElement>(null);
+  const resetViewRef = useRef<HTMLButtonElement>(null);
+  const letterPrevRef = useRef<HTMLButtonElement>(null);
+  const letterNextRef = useRef<HTMLButtonElement>(null);
   const fullscreenRef = useRef<HTMLButtonElement>(null);
 
   const getControlRefs = useCallback(() => {
-    const refs = [homeRef, snellenRef, hindiRef, eChartRef];
-    if (isSingleLetterMode) {
-      refs.push(letterMinusRef, letterPlusRef);
-    }
-    refs.push(sizeMinusRef, sizePlusRef, fullscreenRef);
+    const refs = [
+      homeRef, 
+      snellenRef, 
+      hindiRef, 
+      cChartRef, 
+      lineViewRef, 
+      letterViewRef, 
+      sizePlusRef, 
+      sizeMinusRef, 
+      resetViewRef,
+      letterPrevRef, 
+      letterNextRef, 
+      fullscreenRef
+    ];
     return refs.map(ref => ref.current ? ref : null).filter(Boolean);
-  }, [isSingleLetterMode]);
+  }, []);
 
 
   const handleSelectChart = (type: ChartType) => {
@@ -45,6 +69,16 @@ const App: React.FC = () => {
     setChartMode('display');
   };
   
+  const handleStartCalibration = () => {
+    setView('calibration');
+  };
+
+  const handleCalibrationComplete = (ppmm: number) => {
+    setPixelsPerMm(ppmm);
+    localStorage.setItem('pixelsPerMm', ppmm.toString());
+    setView('landing');
+  };
+
   const handleGoHome = () => {
     if (document.fullscreenElement) {
       document.exitFullscreen();
@@ -83,8 +117,8 @@ const App: React.FC = () => {
         return SNELLEN_CHART;
       case ChartType.Hindi:
         return HINDI_CHART;
-      case ChartType.EChart:
-        return E_CHART;
+      case ChartType.CChart:
+        return C_CHART;
       default:
         return SNELLEN_CHART;
     }
@@ -102,7 +136,7 @@ const App: React.FC = () => {
       }
     });
     setSingleLetterIndex(0);
-    setIsSingleLetterMode(false);
+    // Keep single letter mode active when changing lines if it was already on
   }, [chartData.length]);
 
   const handleChartTypeChange = useCallback((type: ChartType) => {
@@ -112,27 +146,113 @@ const App: React.FC = () => {
     setIsSingleLetterMode(false);
   }, []);
 
-  const handleToggleSingleLetterMode = useCallback(() => {
-    setIsSingleLetterMode(prev => !prev);
+  const handleSetLineView = useCallback(() => {
+    if (!isSingleLetterMode) return;
+    setIsSingleLetterMode(false);
     setSingleLetterIndex(0);
-  }, []);
+    const lineViewIndex = getControlRefs().findIndex(ref => ref.current === lineViewRef.current);
+    if(lineViewIndex !== -1) setFocusedControlIndex(lineViewIndex);
+  }, [isSingleLetterMode, getControlRefs]);
 
-  const handleLetterIndexChange = useCallback((direction: 'increase' | 'decrease') => {
-    setSingleLetterIndex(prevIndex => {
-      if (direction === 'increase') {
-        return Math.min(prevIndex + 1, currentLine.letters.length - 1);
+  const handleSetLetterView = useCallback(() => {
+      if (isSingleLetterMode) return;
+      setIsSingleLetterMode(true);
+      setSingleLetterIndex(0);
+      const letterViewIndex = getControlRefs().findIndex(ref => ref.current === letterViewRef.current);
+      if(letterViewIndex !== -1) setFocusedControlIndex(letterViewIndex);
+  }, [isSingleLetterMode, getControlRefs]);
+
+  const handleToggleSingleLetterMode = useCallback(() => {
+      if (isSingleLetterMode) {
+        handleSetLineView();
       } else {
-        return Math.max(prevIndex - 1, 0);
+        handleSetLetterView();
       }
-    });
-  }, [currentLine.letters.length]);
-  
-  // When single letter mode changes, reset focus in controls mode to avoid focus errors
-  useEffect(() => {
-    if (chartMode === 'controls') {
-      setFocusedControlIndex(0);
+  }, [isSingleLetterMode, handleSetLineView, handleSetLetterView]);
+
+  const handleNextLetter = useCallback(() => {
+    const currentLine = chartData[currentLineIndex];
+    if (singleLetterIndex < currentLine.letters.length - 1) {
+      setSingleLetterIndex(prev => prev + 1);
+    } else if (currentLineIndex < chartData.length - 1) {
+      setCurrentLineIndex(prev => prev + 1);
+      setSingleLetterIndex(0);
     }
-  }, [isSingleLetterMode, chartMode]);
+  }, [currentLineIndex, singleLetterIndex, chartData]);
+
+  const handlePreviousLetter = useCallback(() => {
+    if (singleLetterIndex > 0) {
+      setSingleLetterIndex(prev => prev - 1);
+    } else if (currentLineIndex > 0) {
+      const prevLineIndex = currentLineIndex - 1;
+      const prevLine = chartData[prevLineIndex];
+      setCurrentLineIndex(prevLineIndex);
+      setSingleLetterIndex(prevLine.letters.length - 1);
+    }
+  }, [currentLineIndex, singleLetterIndex, chartData]);
+
+  const handleResetView = useCallback(() => {
+    setCurrentLineIndex(0);
+    setIsSingleLetterMode(false);
+    setSingleLetterIndex(0);
+    setChartMode('display');
+  }, []);
+  
+  // Effect for Mouse Mode - runs globally and captures events
+  useEffect(() => {
+    const CURSOR_SPEED = 20;
+
+    const handleGlobalKeyDown = (event: KeyboardEvent) => {
+      // Toggle mouse mode with 'm' key
+      if (event.key.toLowerCase() === 'm') {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        setIsMouseMode(prev => {
+          if (!prev) { // When turning on, reset cursor position
+            setCursorPosition({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
+          }
+          return !prev;
+        });
+        return;
+      }
+
+      if (isMouseMode) {
+        event.preventDefault();
+        event.stopImmediatePropagation(); // This stops other listeners on window (e.g., in other components)
+
+        switch (event.key) {
+          case 'ArrowUp':
+            setCursorPosition(prev => ({ ...prev, y: Math.max(0, prev.y - CURSOR_SPEED) }));
+            break;
+          case 'ArrowDown':
+            setCursorPosition(prev => ({ ...prev, y: Math.min(window.innerHeight - 1, prev.y + CURSOR_SPEED) }));
+            break;
+          case 'ArrowLeft':
+            setCursorPosition(prev => ({ ...prev, x: Math.max(0, prev.x - CURSOR_SPEED) }));
+            break;
+          case 'ArrowRight':
+            setCursorPosition(prev => ({ ...prev, x: Math.min(window.innerWidth - 1, prev.x + CURSOR_SPEED) }));
+            break;
+          case 'Enter':
+          case ' ':
+            const elem = document.elementFromPoint(cursorPosition.x, cursorPosition.y);
+            if (elem instanceof HTMLElement) {
+              elem.click();
+            }
+            break;
+          default:
+            break;
+        }
+      }
+    };
+    
+    // Use capture phase to ensure this listener runs before others
+    window.addEventListener('keydown', handleGlobalKeyDown, true);
+
+    return () => {
+      window.removeEventListener('keydown', handleGlobalKeyDown, true);
+    };
+  }, [isMouseMode, cursorPosition]);
 
 
   useEffect(() => {
@@ -142,23 +262,27 @@ const App: React.FC = () => {
       if (chartMode === 'display') {
         switch (event.key) {
           case 'ArrowUp':
-            event.preventDefault();
-            handleLineChange('decrease');
+            if (!isSingleLetterMode) {
+              event.preventDefault();
+              handleLineChange('decrease');
+            }
             break;
           case 'ArrowDown':
-            event.preventDefault();
-            handleLineChange('increase');
+            if (!isSingleLetterMode) {
+              event.preventDefault();
+              handleLineChange('increase');
+            }
             break;
           case 'ArrowLeft':
             if (isSingleLetterMode) {
               event.preventDefault();
-              handleLetterIndexChange('decrease');
+              handlePreviousLetter();
             }
             break;
           case 'ArrowRight':
             if (isSingleLetterMode) {
               event.preventDefault();
-              handleLetterIndexChange('increase');
+              handleNextLetter();
             }
             break;
           case 'Enter':
@@ -213,7 +337,7 @@ const App: React.FC = () => {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [view, chartMode, isSingleLetterMode, handleLineChange, handleLetterIndexChange, handleToggleSingleLetterMode, isFullscreen, handleToggleFullscreen, getControlRefs, focusedControlIndex]);
+  }, [view, chartMode, isSingleLetterMode, handleLineChange, handleNextLetter, handlePreviousLetter, handleToggleSingleLetterMode, isFullscreen, handleToggleFullscreen, getControlRefs, focusedControlIndex]);
 
   // Effect to manage focus on controls
   useEffect(() => {
@@ -232,11 +356,27 @@ const App: React.FC = () => {
 
 
   if (view === 'landing') {
-    return <LandingPage onSelectChart={handleSelectChart} />;
+    return <LandingPage onSelectChart={handleSelectChart} onCalibrate={handleStartCalibration} />;
   }
+  
+  if (view === 'calibration') {
+    return <CalibrationPage onCalibrationComplete={handleCalibrationComplete} onBack={() => setView('landing')} />;
+  }
+  
+  const isAtFirstLetterOverall = currentLineIndex === 0 && singleLetterIndex === 0;
+  const isAtLastLetterOverall = currentLineIndex === chartData.length - 1 && singleLetterIndex === chartData[currentLineIndex].letters.length - 1;
 
   return (
     <main className="bg-white text-black h-screen w-screen flex flex-col items-center justify-center font-sans overflow-hidden">
+      {isMouseMode && <VirtualCursor position={cursorPosition} />}
+      {isMouseMode && (
+        <div 
+          className="fixed bottom-4 right-4 bg-black/70 backdrop-blur-sm text-white text-lg px-4 py-2 rounded-lg shadow-lg z-[9998]"
+          aria-live="polite"
+        >
+          Mouse Mode <span className="font-mono bg-white/20 px-2 py-1 rounded">M</span>
+        </div>
+      )}
       <div className="flex-grow flex items-center justify-center w-full">
         <EyeChart 
           chartType={chartType}
@@ -244,6 +384,7 @@ const App: React.FC = () => {
           isSingleLetterMode={isSingleLetterMode}
           singleLetterIndex={singleLetterIndex}
           isFullscreen={isFullscreen}
+          pixelsPerMm={pixelsPerMm}
         />
       </div>
       {!isFullscreen && (
@@ -254,22 +395,28 @@ const App: React.FC = () => {
           isMinLine={currentLineIndex === 0}
           isMaxLine={currentLineIndex === chartData.length - 1}
           isSingleLetterMode={isSingleLetterMode}
-          onToggleSingleLetterMode={handleToggleSingleLetterMode}
-          onLetterIndexChange={handleLetterIndexChange}
-          isMinLetter={singleLetterIndex === 0}
-          isMaxLetter={currentLine.letters.length === 0 || singleLetterIndex === currentLine.letters.length - 1}
+          onSetLineView={handleSetLineView}
+          onSetLetterView={handleSetLetterView}
+          onPreviousLetter={handlePreviousLetter}
+          onNextLetter={handleNextLetter}
+          isAtFirstLetter={isAtFirstLetterOverall}
+          isAtLastLetter={isAtLastLetterOverall}
           onGoHome={handleGoHome}
           isFullscreen={isFullscreen}
           onToggleFullscreen={handleToggleFullscreen}
+          onResetView={handleResetView}
           homeRef={homeRef}
           snellenRef={snellenRef}
           hindiRef={hindiRef}
-          eChartRef={eChartRef}
-          letterMinusRef={letterMinusRef}
-          letterPlusRef={letterPlusRef}
+          cChartRef={cChartRef}
+          lineViewRef={lineViewRef}
+          letterViewRef={letterViewRef}
           sizeMinusRef={sizeMinusRef}
           sizePlusRef={sizePlusRef}
+          letterPrevRef={letterPrevRef}
+          letterNextRef={letterNextRef}
           fullscreenRef={fullscreenRef}
+          resetViewRef={resetViewRef}
         />
       )}
     </main>

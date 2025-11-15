@@ -1,12 +1,12 @@
 export enum ChartType {
   Snellen = 'snellen',
   Hindi = 'hindi',
-  EChart = 'e-chart',
+  CChart = 'c-chart',
 }
 
 export interface ChartLine {
   acuity: string;
   letters: string[];
-  size: string;
+  size: number; // Optotype height in mm
   lineHeight: string;
 }

@@ -7,19 +7,28 @@ interface EyeChartProps {
   isSingleLetterMode: boolean;
   singleLetterIndex: number;
   isFullscreen: boolean;
+  pixelsPerMm: number;
 }
 
 const rotations = ['rotate-0', 'rotate-90', 'rotate-180', '-rotate-90'];
 const getRandomRotation = () => rotations[Math.floor(Math.random() * rotations.length)];
 
-const EyeChart: React.FC<EyeChartProps> = ({ chartType, line, isSingleLetterMode, singleLetterIndex, isFullscreen }) => {
-  const [eRotations, setERotations] = useState<string[]>([]);
+const EyeChart: React.FC<EyeChartProps> = ({ chartType, line, isSingleLetterMode, singleLetterIndex, isFullscreen, pixelsPerMm }) => {
+  const [cRotations, setCRotations] = useState<string[]>([]);
 
   useEffect(() => {
-    if (chartType === ChartType.EChart) {
-      setERotations(line.letters.map(() => getRandomRotation()));
+    if (chartType === ChartType.CChart) {
+      setCRotations(line.letters.map(() => getRandomRotation()));
     }
   }, [line, chartType]);
+
+  const fontSizePx = useMemo(() => {
+    // CSS font-size sets the height of the em-box, not the actual character height (cap-height).
+    // For many fonts, cap-height is ~70% of the font-size. To make the rendered character
+    // height match the required physical height, we apply a correction factor.
+    const correctionFactor = 1.4; // (1 / 0.7)
+    return line.size * pixelsPerMm * correctionFactor;
+  }, [line.size, pixelsPerMm]);
 
   const chartContent = useMemo(() => {
     const lettersToRender = isSingleLetterMode ? [line.letters[singleLetterIndex]] : line.letters;
@@ -28,9 +37,9 @@ const EyeChart: React.FC<EyeChartProps> = ({ chartType, line, isSingleLetterMode
     return lettersToRender.map((letter, index) => {
       if (letter === undefined) return null; // Safety check if index is out of bounds
       
-      const isEChart = chartType === ChartType.EChart;
+      const isCChart = chartType === ChartType.CChart;
       const originalIndex = index + letterKeyOffset;
-      const transformClass = isEChart ? eRotations[originalIndex] || '' : '';
+      const transformClass = isCChart ? cRotations[originalIndex] || '' : '';
       
       return (
         <span
@@ -41,12 +50,13 @@ const EyeChart: React.FC<EyeChartProps> = ({ chartType, line, isSingleLetterMode
         </span>
       );
     });
-  }, [line, chartType, eRotations, isSingleLetterMode, singleLetterIndex]);
+  }, [line, chartType, cRotations, isSingleLetterMode, singleLetterIndex]);
 
   return (
     <div className="w-full text-center p-4 flex flex-col items-center justify-center">
       <div 
-        className={`flex items-center justify-center gap-x-2 md:gap-x-8 flex-wrap font-serif tracking-wider ${line.size} ${line.lineHeight}`}
+        className={`flex items-center justify-center gap-x-2 md:gap-x-8 flex-wrap font-serif tracking-wider ${line.lineHeight}`}
+        style={{ fontSize: `${fontSizePx}px` }}
         aria-live="polite"
       >
         {chartContent}

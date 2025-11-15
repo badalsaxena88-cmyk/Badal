@@ -3,6 +3,7 @@ import { ChartType } from '../types';
 
 interface LandingPageProps {
   onSelectChart: (type: ChartType) => void;
+  onCalibrate: () => void;
 }
 
 interface ChartCardProps {
@@ -28,21 +29,23 @@ const ChartCard = React.forwardRef<HTMLButtonElement, ChartCardProps>(
 const chartOptions = [
   { type: ChartType.Snellen, title: 'English', character: 'A', fontClass: 'font-serif' },
   { type: ChartType.Hindi, title: 'Hindi', character: 'र', fontClass: '' },
-  { type: ChartType.EChart, title: 'E Chart', character: 'E', fontClass: 'font-serif' },
+  { type: ChartType.CChart, title: 'C Chart', character: 'C', fontClass: 'font-serif' },
 ];
 
-const LandingPage: React.FC<LandingPageProps> = ({ onSelectChart }) => {
-  const [focusedCardIndex, setFocusedCardIndex] = useState(0);
-  const cardRefs = useRef<(HTMLButtonElement | null)[]>([]);
+const LandingPage: React.FC<LandingPageProps> = ({ onSelectChart, onCalibrate }) => {
+  const [focusedIndex, setFocusedIndex] = useState(0);
+  const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  
+  const focusableItems = [...chartOptions, { type: 'calibrate', title: 'Calibrate' }];
 
   // Set focus when index changes
   useEffect(() => {
-    cardRefs.current[focusedCardIndex]?.focus();
-  }, [focusedCardIndex]);
+    itemRefs.current[focusedIndex]?.focus();
+  }, [focusedIndex]);
   
-  // Set initial focus on the first language option
+  // Set initial focus
   useEffect(() => {
-    cardRefs.current[0]?.focus();
+    itemRefs.current[0]?.focus();
   }, []);
 
   // Handle remote control navigation
@@ -51,19 +54,16 @@ const LandingPage: React.FC<LandingPageProps> = ({ onSelectChart }) => {
       switch (event.key) {
         case 'ArrowRight':
           event.preventDefault();
-          setFocusedCardIndex(prev => (prev + 1) % chartOptions.length);
+          setFocusedIndex(prev => (prev + 1) % focusableItems.length);
           break;
         case 'ArrowLeft':
           event.preventDefault();
-          setFocusedCardIndex(prev => (prev - 1 + chartOptions.length) % chartOptions.length);
+          setFocusedIndex(prev => (prev - 1 + focusableItems.length) % focusableItems.length);
           break;
         case 'Enter':
         case ' ': // Handle space key as select
           event.preventDefault();
-          const focusedButton = cardRefs.current[focusedCardIndex];
-          if (focusedButton) {
-            focusedButton.click();
-          }
+          itemRefs.current[focusedIndex]?.click();
           break;
         default:
           break;
@@ -74,7 +74,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onSelectChart }) => {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [focusedCardIndex]);
+  }, [focusedIndex, focusableItems.length]);
 
 
   return (
@@ -84,13 +84,22 @@ const LandingPage: React.FC<LandingPageProps> = ({ onSelectChart }) => {
         {chartOptions.map((chart, index) => (
           <ChartCard
             key={chart.type}
-            ref={el => cardRefs.current[index] = el}
+            ref={el => itemRefs.current[index] = el}
             title={chart.title}
             character={chart.character}
             fontClass={chart.fontClass}
             onClick={() => onSelectChart(chart.type)}
           />
         ))}
+      </div>
+      <div className="mt-16">
+        <button
+          ref={el => itemRefs.current[chartOptions.length] = el}
+          onClick={onCalibrate}
+          className="px-8 py-4 bg-gray-200 text-xl font-semibold text-black rounded-lg transition-colors duration-200 hover:bg-gray-300 focus:outline-none focus:ring-4 focus:ring-blue-500"
+        >
+          Calibrate Display
+        </button>
       </div>
     </div>
   );

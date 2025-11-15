@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 export const PlusIcon: React.FC = () => (
@@ -64,4 +63,29 @@ export const ExitFullscreenIcon: React.FC = () => (
   >
     <path strokeLinecap="round" strokeLinejoin="round" d="M8 4H4v4m12 12h-4v-4m4-8h-4V4m-8 12H4v-4" />
   </svg>
+);
+
+export const ResetIcon: React.FC = () => (
+    <svg 
+        xmlns="http://www.w3.org/2000/svg" 
+        className="h-6 w-6 md:h-8 md:w-8" 
+        fill="none" 
+        viewBox="0 0 24 24" 
+        stroke="currentColor" 
+        strokeWidth={2}
+    >
+        <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0011.667 0l3.182-3.182m0-7.072l-3.182-3.182a8.25 8.25 0 00-11.667 0L2.985 12.586" />
+    </svg>
+);
+
+export const BackIcon: React.FC = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 md:h-8 md:w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+  </svg>
+);
+
+export const CheckIcon: React.FC = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 md:h-8 md:w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+    </svg>
 );
