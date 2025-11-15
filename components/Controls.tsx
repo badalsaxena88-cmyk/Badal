@@ -9,7 +9,6 @@ interface ControlsProps {
   isMinLine: boolean;
   isMaxLine: boolean;
   isSingleLetterMode: boolean;
-  onSetLineView: () => void;
   onSetLetterView: () => void;
   onPreviousLetter: () => void;
   onNextLetter: () => void;
@@ -23,8 +22,6 @@ interface ControlsProps {
   snellenRef: React.Ref<HTMLButtonElement>;
   hindiRef: React.Ref<HTMLButtonElement>;
   cChartRef: React.Ref<HTMLButtonElement>;
-  lineViewRef: React.Ref<HTMLButtonElement>;
-  letterViewRef: React.Ref<HTMLButtonElement>;
   sizeMinusRef: React.Ref<HTMLButtonElement>;
   sizePlusRef: React.Ref<HTMLButtonElement>;
   letterPrevRef: React.Ref<HTMLButtonElement>;
@@ -86,7 +83,6 @@ const Controls: React.FC<ControlsProps> = ({
   isMinLine,
   isMaxLine,
   isSingleLetterMode,
-  onSetLineView,
   onSetLetterView,
   onPreviousLetter,
   onNextLetter,
@@ -100,8 +96,6 @@ const Controls: React.FC<ControlsProps> = ({
   snellenRef,
   hindiRef,
   cChartRef,
-  lineViewRef,
-  letterViewRef,
   sizeMinusRef,
   sizePlusRef,
   letterPrevRef,
@@ -131,31 +125,6 @@ const Controls: React.FC<ControlsProps> = ({
 
         {/* Action Controls */}
         <div className="flex items-center gap-2 md:gap-4">
-            <div className="flex items-center gap-2 p-1 bg-gray-200 rounded-xl">
-              <button
-                  ref={lineViewRef}
-                  onClick={onSetLineView}
-                  className={`px-4 py-2 md:px-6 md:py-3 text-lg md:text-xl font-semibold rounded-lg transition-colors duration-200 focus:outline-none focus:ring-4 focus:ring-blue-500 ${
-                    !isSingleLetterMode
-                      ? 'bg-blue-600 text-white'
-                      : 'text-black hover:bg-gray-300'
-                  }`}
-              >
-                Line
-              </button>
-              <button
-                  ref={letterViewRef}
-                  onClick={onSetLetterView}
-                  className={`px-4 py-2 md:px-6 md:py-3 text-lg md:text-xl font-semibold rounded-lg transition-colors duration-200 focus:outline-none focus:ring-4 focus:ring-blue-500 ${
-                    isSingleLetterMode
-                      ? 'bg-blue-600 text-white'
-                      : 'text-black hover:bg-gray-300'
-                  }`}
-              >
-                Letter
-              </button>
-            </div>
-            
             {/* Line Controls */}
             <div className="flex items-center gap-2 p-1 bg-gray-200 rounded-xl">
                 <IconButton
@@ -176,15 +145,6 @@ const Controls: React.FC<ControlsProps> = ({
                 </IconButton>
             </div>
             
-            <IconButton
-              ref={resetViewRef}
-              onClick={onResetView}
-              ariaLabel={'Reset view to default'}
-              className="bg-gray-200"
-            >
-                <ResetIcon />
-            </IconButton>
-
             {/* Letter Controls */}
             <div className="flex items-center gap-2 p-1 bg-gray-200 rounded-xl">
                 <IconButton
@@ -197,13 +157,22 @@ const Controls: React.FC<ControlsProps> = ({
                 </IconButton>
                 <IconButton
                     ref={letterNextRef}
-                    onClick={onNextLetter}
-                    disabled={!isSingleLetterMode || isAtLastLetter}
-                    ariaLabel={'Next letter'}
+                    onClick={isSingleLetterMode ? onNextLetter : onSetLetterView}
+                    disabled={isSingleLetterMode && isAtLastLetter}
+                    ariaLabel={isSingleLetterMode ? 'Next letter' : 'Switch to single letter view'}
                 >
                     <PlusIcon />
                 </IconButton>
             </div>
+
+            <IconButton
+              ref={resetViewRef}
+              onClick={onResetView}
+              ariaLabel={'Reset view to default'}
+              className="bg-gray-200"
+            >
+                <ResetIcon />
+            </IconButton>
 
             <IconButton
               ref={fullscreenRef}

@@ -32,8 +32,6 @@ const App: React.FC = () => {
   const snellenRef = useRef<HTMLButtonElement>(null);
   const hindiRef = useRef<HTMLButtonElement>(null);
   const cChartRef = useRef<HTMLButtonElement>(null);
-  const lineViewRef = useRef<HTMLButtonElement>(null);
-  const letterViewRef = useRef<HTMLButtonElement>(null);
   const sizeMinusRef = useRef<HTMLButtonElement>(null);
   const sizePlusRef = useRef<HTMLButtonElement>(null);
   const resetViewRef = useRef<HTMLButtonElement>(null);
@@ -47,13 +45,11 @@ const App: React.FC = () => {
       snellenRef, 
       hindiRef, 
       cChartRef, 
-      lineViewRef, 
-      letterViewRef, 
       sizePlusRef, 
       sizeMinusRef, 
-      resetViewRef,
       letterPrevRef, 
       letterNextRef, 
+      resetViewRef,
       fullscreenRef
     ];
     return refs.map(ref => ref.current ? ref : null).filter(Boolean);
@@ -128,6 +124,7 @@ const App: React.FC = () => {
   const currentLine = chartData[currentLineIndex];
 
   const handleLineChange = useCallback((direction: 'increase' | 'decrease') => {
+    setIsSingleLetterMode(false); // Always show full line when changing lines
     setCurrentLineIndex(prevIndex => {
       if (direction === 'increase') {
         return Math.min(prevIndex + 1, chartData.length - 1);
@@ -136,7 +133,6 @@ const App: React.FC = () => {
       }
     });
     setSingleLetterIndex(0);
-    // Keep single letter mode active when changing lines if it was already on
   }, [chartData.length]);
 
   const handleChartTypeChange = useCallback((type: ChartType) => {
@@ -150,17 +146,13 @@ const App: React.FC = () => {
     if (!isSingleLetterMode) return;
     setIsSingleLetterMode(false);
     setSingleLetterIndex(0);
-    const lineViewIndex = getControlRefs().findIndex(ref => ref.current === lineViewRef.current);
-    if(lineViewIndex !== -1) setFocusedControlIndex(lineViewIndex);
-  }, [isSingleLetterMode, getControlRefs]);
+  }, [isSingleLetterMode]);
 
   const handleSetLetterView = useCallback(() => {
       if (isSingleLetterMode) return;
       setIsSingleLetterMode(true);
       setSingleLetterIndex(0);
-      const letterViewIndex = getControlRefs().findIndex(ref => ref.current === letterViewRef.current);
-      if(letterViewIndex !== -1) setFocusedControlIndex(letterViewIndex);
-  }, [isSingleLetterMode, getControlRefs]);
+  }, [isSingleLetterMode]);
 
   const handleToggleSingleLetterMode = useCallback(() => {
       if (isSingleLetterMode) {
@@ -262,16 +254,12 @@ const App: React.FC = () => {
       if (chartMode === 'display') {
         switch (event.key) {
           case 'ArrowUp':
-            if (!isSingleLetterMode) {
-              event.preventDefault();
-              handleLineChange('decrease');
-            }
+            event.preventDefault();
+            handleLineChange('decrease');
             break;
           case 'ArrowDown':
-            if (!isSingleLetterMode) {
-              event.preventDefault();
-              handleLineChange('increase');
-            }
+            event.preventDefault();
+            handleLineChange('increase');
             break;
           case 'ArrowLeft':
             if (isSingleLetterMode) {
@@ -283,6 +271,9 @@ const App: React.FC = () => {
             if (isSingleLetterMode) {
               event.preventDefault();
               handleNextLetter();
+            } else {
+              event.preventDefault();
+              handleSetLetterView();
             }
             break;
           case 'Enter':
@@ -337,7 +328,7 @@ const App: React.FC = () => {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [view, chartMode, isSingleLetterMode, handleLineChange, handleNextLetter, handlePreviousLetter, handleToggleSingleLetterMode, isFullscreen, handleToggleFullscreen, getControlRefs, focusedControlIndex]);
+  }, [view, chartMode, isSingleLetterMode, handleLineChange, handleNextLetter, handlePreviousLetter, handleSetLetterView, handleToggleSingleLetterMode, isFullscreen, handleToggleFullscreen, getControlRefs, focusedControlIndex]);
 
   // Effect to manage focus on controls
   useEffect(() => {
@@ -395,7 +386,6 @@ const App: React.FC = () => {
           isMinLine={currentLineIndex === 0}
           isMaxLine={currentLineIndex === chartData.length - 1}
           isSingleLetterMode={isSingleLetterMode}
-          onSetLineView={handleSetLineView}
           onSetLetterView={handleSetLetterView}
           onPreviousLetter={handlePreviousLetter}
           onNextLetter={handleNextLetter}
@@ -409,8 +399,6 @@ const App: React.FC = () => {
           snellenRef={snellenRef}
           hindiRef={hindiRef}
           cChartRef={cChartRef}
-          lineViewRef={lineViewRef}
-          letterViewRef={letterViewRef}
           sizeMinusRef={sizeMinusRef}
           sizePlusRef={sizePlusRef}
           letterPrevRef={letterPrevRef}
