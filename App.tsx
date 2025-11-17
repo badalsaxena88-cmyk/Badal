@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { ChartType } from './types';
 import EyeChart from './components/EyeChart';
@@ -233,11 +234,45 @@ const App: React.FC = () => {
       switch (view) {
         case 'landing': {
           const landingRefs = getLandingRefs();
-          const focusableItemsCount = landingRefs.length;
+          const NUM_CARDS = 3;
+          const CALIBRATE_INDEX = 3;
+
           switch (event.key) {
-            case 'ArrowRight': event.preventDefault(); setLandingFocusedIndex(prev => (prev + 1) % focusableItemsCount); break;
-            case 'ArrowLeft': event.preventDefault(); setLandingFocusedIndex(prev => (prev - 1 + focusableItemsCount) % focusableItemsCount); break;
-            case 'Enter': case ' ': event.preventDefault(); landingRefs[landingFocusedIndex]?.current?.click(); break;
+            case 'ArrowRight':
+              event.preventDefault();
+              setLandingFocusedIndex(prev => {
+                if (prev < NUM_CARDS - 1) return prev + 1; // Move right among cards
+                if (prev === NUM_CARDS - 1) return 0; // Wrap from last card to first
+                return prev; // Do nothing if on calibrate button
+              });
+              break;
+            case 'ArrowLeft':
+              event.preventDefault();
+              setLandingFocusedIndex(prev => {
+                if (prev > 0 && prev < NUM_CARDS) return prev - 1; // Move left among cards
+                if (prev === 0) return NUM_CARDS - 1; // Wrap from first card to last
+                return prev; // Do nothing if on calibrate button
+              });
+              break;
+            case 'ArrowDown':
+              event.preventDefault();
+              setLandingFocusedIndex(prev => {
+                if (prev < NUM_CARDS) return CALIBRATE_INDEX; // Move from any card down to calibrate
+                return prev; // Do nothing if already on calibrate
+              });
+              break;
+            case 'ArrowUp':
+              event.preventDefault();
+              setLandingFocusedIndex(prev => {
+                if (prev === CALIBRATE_INDEX) return 1; // Move from calibrate up to middle card (index 1)
+                return prev; // Do nothing if on cards
+              });
+              break;
+            case 'Enter':
+            case ' ':
+              event.preventDefault();
+              landingRefs[landingFocusedIndex]?.current?.click();
+              break;
           }
           break;
         }
