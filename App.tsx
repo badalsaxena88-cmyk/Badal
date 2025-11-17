@@ -86,6 +86,7 @@ const App: React.FC = () => {
     setPixelsPerMm(ppmm);
     localStorage.setItem('pixelsPerMm', ppmm.toString());
     setView('landing');
+    setLandingFocusedIndex(0);
   };
 
   const handleGoHome = () => {
@@ -94,6 +95,7 @@ const App: React.FC = () => {
     }
     setView('landing');
     setChartMode('display');
+    setLandingFocusedIndex(0);
   };
 
   const handleToggleFullscreen = useCallback(() => {
@@ -241,16 +243,14 @@ const App: React.FC = () => {
             case 'ArrowRight':
               event.preventDefault();
               setLandingFocusedIndex(prev => {
-                if (prev < NUM_CARDS - 1) return prev + 1; // Move right among cards
-                if (prev === NUM_CARDS - 1) return 0; // Wrap from last card to first
+                if (prev < NUM_CARDS) return (prev + 1) % NUM_CARDS; // Cycle through cards
                 return prev; // Do nothing if on calibrate button
               });
               break;
             case 'ArrowLeft':
               event.preventDefault();
               setLandingFocusedIndex(prev => {
-                if (prev > 0 && prev < NUM_CARDS) return prev - 1; // Move left among cards
-                if (prev === 0) return NUM_CARDS - 1; // Wrap from first card to last
+                if (prev < NUM_CARDS) return (prev - 1 + NUM_CARDS) % NUM_CARDS; // Cycle through cards
                 return prev; // Do nothing if on calibrate button
               });
               break;
