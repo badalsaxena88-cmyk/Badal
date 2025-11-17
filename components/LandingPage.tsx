@@ -1,9 +1,13 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React from 'react';
 import { ChartType } from '../types';
 
 interface LandingPageProps {
   onSelectChart: (type: ChartType) => void;
   onCalibrate: () => void;
+  snellenCardRef: React.Ref<HTMLButtonElement>;
+  hindiCardRef: React.Ref<HTMLButtonElement>;
+  cChartCardRef: React.Ref<HTMLButtonElement>;
+  calibrateButtonRef: React.Ref<HTMLButtonElement>;
 }
 
 interface ChartCardProps {
@@ -32,50 +36,15 @@ const chartOptions = [
   { type: ChartType.CChart, title: 'C Chart', character: 'C', fontClass: 'font-serif' },
 ];
 
-const LandingPage: React.FC<LandingPageProps> = ({ onSelectChart, onCalibrate }) => {
-  const [focusedIndex, setFocusedIndex] = useState(0);
-  const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  
-  const focusableItems = [...chartOptions, { type: 'calibrate', title: 'Calibrate' }];
-
-  // Set focus when index changes
-  useEffect(() => {
-    itemRefs.current[focusedIndex]?.focus();
-  }, [focusedIndex]);
-  
-  // Set initial focus
-  useEffect(() => {
-    itemRefs.current[0]?.focus();
-  }, []);
-
-  // Handle remote control navigation
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      switch (event.key) {
-        case 'ArrowRight':
-          event.preventDefault();
-          setFocusedIndex(prev => (prev + 1) % focusableItems.length);
-          break;
-        case 'ArrowLeft':
-          event.preventDefault();
-          setFocusedIndex(prev => (prev - 1 + focusableItems.length) % focusableItems.length);
-          break;
-        case 'Enter':
-        case ' ': // Handle space key as select
-          event.preventDefault();
-          itemRefs.current[focusedIndex]?.click();
-          break;
-        default:
-          break;
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [focusedIndex, focusableItems.length]);
-
+const LandingPage: React.FC<LandingPageProps> = ({ 
+  onSelectChart, 
+  onCalibrate,
+  snellenCardRef,
+  hindiCardRef,
+  cChartCardRef,
+  calibrateButtonRef
+}) => {
+  const chartRefs = [snellenCardRef, hindiCardRef, cChartCardRef];
 
   return (
     <div className="bg-white text-black h-screen w-screen flex flex-col items-center justify-center font-sans overflow-hidden p-8">
@@ -84,7 +53,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onSelectChart, onCalibrate })
         {chartOptions.map((chart, index) => (
           <ChartCard
             key={chart.type}
-            ref={el => itemRefs.current[index] = el}
+            ref={chartRefs[index]}
             title={chart.title}
             character={chart.character}
             fontClass={chart.fontClass}
@@ -94,7 +63,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onSelectChart, onCalibrate })
       </div>
       <div className="mt-16">
         <button
-          ref={el => itemRefs.current[chartOptions.length] = el}
+          ref={calibrateButtonRef}
           onClick={onCalibrate}
           className="px-8 py-4 bg-gray-200 text-xl font-semibold text-black rounded-lg transition-colors duration-200 hover:bg-gray-300 focus:outline-none focus:ring-4 focus:ring-blue-500"
         >

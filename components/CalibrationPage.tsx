@@ -1,77 +1,27 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { ArrowUpIcon, ArrowDownIcon, BackIcon, CheckIcon } from './icons';
+import React from 'react';
+import { PlusIcon, MinusIcon, BackIcon, CheckIcon } from './icons';
 
 interface CalibrationPageProps {
-  onCalibrationComplete: (pixelsPerMm: number) => void;
+  onSave: () => void;
   onBack: () => void;
+  boxWidthPx: number;
+  onAdjustWidth: (amount: number) => void;
+  backRef: React.Ref<HTMLButtonElement>;
+  minusRef: React.Ref<HTMLButtonElement>;
+  plusRef: React.Ref<HTMLButtonElement>;
+  saveRef: React.Ref<HTMLButtonElement>;
 }
 
-const CREDIT_CARD_WIDTH_MM = 85.6;
-// Start with a reasonable pixel width for a 32" TV
-const INITIAL_PIXEL_WIDTH = 230;
-
-const CalibrationPage: React.FC<CalibrationPageProps> = ({ onCalibrationComplete, onBack }) => {
-  const [boxWidthPx, setBoxWidthPx] = useState(INITIAL_PIXEL_WIDTH);
-  const [focusedControlIndex, setFocusedControlIndex] = useState(1); // Start focus on Minus button
-
-  const backRef = useRef<HTMLButtonElement>(null);
-  const minusRef = useRef<HTMLButtonElement>(null);
-  const plusRef = useRef<HTMLButtonElement>(null);
-  const saveRef = useRef<HTMLButtonElement>(null);
-  
-  const controlRefs = [backRef, minusRef, plusRef, saveRef];
-
-  const handleSave = () => {
-    const pixelsPerMm = boxWidthPx / CREDIT_CARD_WIDTH_MM;
-    onCalibrationComplete(pixelsPerMm);
-  };
-  
-  const adjustWidth = (amount: number) => {
-      setBoxWidthPx(prev => Math.max(50, prev + amount));
-  };
-
-  useEffect(() => {
-    const focusedElement = controlRefs[focusedControlIndex]?.current;
-    if (focusedElement) {
-        focusedElement.focus();
-    }
-  }, [focusedControlIndex]);
-
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      switch (event.key) {
-        case 'ArrowRight':
-          event.preventDefault();
-          setFocusedControlIndex(prev => (prev + 1) % controlRefs.length);
-          break;
-        case 'ArrowLeft':
-          event.preventDefault();
-          setFocusedControlIndex(prev => (prev - 1 + controlRefs.length) % controlRefs.length);
-          break;
-        case 'ArrowUp':
-            event.preventDefault();
-            adjustWidth(1);
-            break;
-        case 'ArrowDown':
-            event.preventDefault();
-            adjustWidth(-1);
-            break;
-        case 'Enter':
-        case ' ':
-          event.preventDefault();
-          controlRefs[focusedControlIndex]?.current?.click();
-          break;
-        default:
-          break;
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [focusedControlIndex, controlRefs]);
-
+const CalibrationPage: React.FC<CalibrationPageProps> = ({
+  onSave,
+  onBack,
+  boxWidthPx,
+  onAdjustWidth,
+  backRef,
+  minusRef,
+  plusRef,
+  saveRef,
+}) => {
   return (
     <div className="bg-white text-black h-screen w-screen flex flex-col items-center justify-center font-sans p-8 text-center">
       <h1 className="text-4xl md:text-6xl font-bold mb-4">Display Calibration</h1>
@@ -103,24 +53,24 @@ const CalibrationPage: React.FC<CalibrationPageProps> = ({ onCalibrationComplete
 
         <button
           ref={minusRef}
-          onClick={() => adjustWidth(-1)}
+          onClick={() => onAdjustWidth(-1)}
           className="p-4 bg-gray-200 rounded-full text-black transition-colors duration-200 focus:outline-none focus:ring-4 focus:ring-blue-500 hover:bg-gray-300"
           aria-label="Decrease size"
         >
-          <ArrowDownIcon />
+          <MinusIcon />
         </button>
         <button
           ref={plusRef}
-          onClick={() => adjustWidth(1)}
+          onClick={() => onAdjustWidth(1)}
           className="p-4 bg-gray-200 rounded-full text-black transition-colors duration-200 focus:outline-none focus:ring-4 focus:ring-blue-500 hover:bg-gray-300"
           aria-label="Increase size"
         >
-          <ArrowUpIcon />
+          <PlusIcon />
         </button>
 
         <button
           ref={saveRef}
-          onClick={handleSave}
+          onClick={onSave}
           className="p-4 bg-blue-600 text-white rounded-lg transition-colors duration-200 focus:outline-none focus:ring-4 focus:ring-blue-500 hover:bg-blue-700 flex items-center gap-2"
           aria-label="Save calibration"
         >

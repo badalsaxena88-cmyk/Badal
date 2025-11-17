@@ -1,6 +1,6 @@
 import React from 'react';
 
-export const ArrowUpIcon: React.FC = () => (
+export const PlusIcon: React.FC = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     className="h-6 w-6 md:h-8 md:w-8"
@@ -9,11 +9,11 @@ export const ArrowUpIcon: React.FC = () => (
     stroke="currentColor"
     strokeWidth={2}
   >
-    <path strokeLinecap="round" strokeLinejoin="round" d="M12 19V5m-7 7l7-7 7 7" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
   </svg>
 );
 
-export const ArrowDownIcon: React.FC = () => (
+export const MinusIcon: React.FC = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     className="h-6 w-6 md:h-8 md:w-8"
@@ -22,33 +22,7 @@ export const ArrowDownIcon: React.FC = () => (
     stroke="currentColor"
     strokeWidth={2}
   >
-    <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14m7-7l-7 7-7-7" />
-  </svg>
-);
-
-export const ArrowLeftIcon: React.FC = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    className="h-6 w-6 md:h-8 md:w-8"
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    strokeWidth={2}
-  >
-    <path strokeLinecap="round" strokeLinejoin="round" d="M19 12H5m7 7l-7-7 7-7" />
-  </svg>
-);
-
-export const ArrowRightIcon: React.FC = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    className="h-6 w-6 md:h-8 md:w-8"
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    strokeWidth={2}
-  >
-    <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M12 5l7 7-7 7" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M20 12H4" />
   </svg>
 );
 

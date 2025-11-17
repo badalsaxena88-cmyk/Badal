@@ -19,6 +19,11 @@ const App: React.FC = () => {
   const [pixelsPerMm, setPixelsPerMm] = useState<number>(2.7); // Default for ~70 PPI TV
   const [isMouseMode, setIsMouseMode] = useState(false);
   const [cursorPosition, setCursorPosition] = useState({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
+  
+  // State for focused elements in other views
+  const [landingFocusedIndex, setLandingFocusedIndex] = useState(0);
+  const [calibrationFocusedIndex, setCalibrationFocusedIndex] = useState(1);
+  const [calibrationBoxWidth, setCalibrationBoxWidth] = useState(230); // INITIAL_PIXEL_WIDTH in calibration page
 
   useEffect(() => {
     const storedPpmm = localStorage.getItem('pixelsPerMm');
@@ -27,11 +32,14 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // Refs for all focusable controls
+  // --- REFS FOR ALL FOCUSABLE ELEMENTS ---
+  // Chart Controls Refs
   const homeRef = useRef<HTMLButtonElement>(null);
   const snellenRef = useRef<HTMLButtonElement>(null);
   const hindiRef = useRef<HTMLButtonElement>(null);
   const cChartRef = useRef<HTMLButtonElement>(null);
+  const lineViewRef = useRef<HTMLButtonElement>(null);
+  const letterViewRef = useRef<HTMLButtonElement>(null);
   const sizeMinusRef = useRef<HTMLButtonElement>(null);
   const sizePlusRef = useRef<HTMLButtonElement>(null);
   const resetViewRef = useRef<HTMLButtonElement>(null);
@@ -39,21 +47,25 @@ const App: React.FC = () => {
   const letterNextRef = useRef<HTMLButtonElement>(null);
   const fullscreenRef = useRef<HTMLButtonElement>(null);
 
+  // Landing Page Refs
+  const snellenCardRef = useRef<HTMLButtonElement>(null);
+  const hindiCardRef = useRef<HTMLButtonElement>(null);
+  const cChartCardRef = useRef<HTMLButtonElement>(null);
+  const calibrateButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Calibration Page Refs
+  const calibBackRef = useRef<HTMLButtonElement>(null);
+  const calibMinusRef = useRef<HTMLButtonElement>(null);
+  const calibPlusRef = useRef<HTMLButtonElement>(null);
+  const calibSaveRef = useRef<HTMLButtonElement>(null);
+
   const getControlRefs = useCallback(() => {
-    const refs = [
-      homeRef, 
-      snellenRef, 
-      hindiRef, 
-      cChartRef, 
-      sizePlusRef, 
-      sizeMinusRef, 
-      letterPrevRef, 
-      letterNextRef, 
-      resetViewRef,
-      fullscreenRef
-    ];
+    const refs = [homeRef, snellenRef, hindiRef, cChartRef, lineViewRef, letterViewRef, sizePlusRef, sizeMinusRef, resetViewRef, letterPrevRef, letterNextRef, fullscreenRef];
     return refs.map(ref => ref.current ? ref : null).filter(Boolean);
   }, []);
+  
+  const getLandingRefs = useCallback(() => [snellenCardRef, hindiCardRef, cChartCardRef, calibrateButtonRef], []);
+  const getCalibrationRefs = useCallback(() => [calibBackRef, calibMinusRef, calibPlusRef, calibSaveRef], []);
 
 
   const handleSelectChart = (type: ChartType) => {
@@ -109,14 +121,10 @@ const App: React.FC = () => {
 
   const getChartData = () => {
     switch (chartType) {
-      case ChartType.Snellen:
-        return SNELLEN_CHART;
-      case ChartType.Hindi:
-        return HINDI_CHART;
-      case ChartType.CChart:
-        return C_CHART;
-      default:
-        return SNELLEN_CHART;
+      case ChartType.Snellen: return SNELLEN_CHART;
+      case ChartType.Hindi: return HINDI_CHART;
+      case ChartType.CChart: return C_CHART;
+      default: return SNELLEN_CHART;
     }
   };
   
@@ -124,7 +132,6 @@ const App: React.FC = () => {
   const currentLine = chartData[currentLineIndex];
 
   const handleLineChange = useCallback((direction: 'increase' | 'decrease') => {
-    setIsSingleLetterMode(false); // Always show full line when changing lines
     setCurrentLineIndex(prevIndex => {
       if (direction === 'increase') {
         return Math.min(prevIndex + 1, chartData.length - 1);
@@ -146,20 +153,21 @@ const App: React.FC = () => {
     if (!isSingleLetterMode) return;
     setIsSingleLetterMode(false);
     setSingleLetterIndex(0);
-  }, [isSingleLetterMode]);
+    const lineViewIndex = getControlRefs().findIndex(ref => ref.current === lineViewRef.current);
+    if(lineViewIndex !== -1) setFocusedControlIndex(lineViewIndex);
+  }, [isSingleLetterMode, getControlRefs]);
 
   const handleSetLetterView = useCallback(() => {
       if (isSingleLetterMode) return;
       setIsSingleLetterMode(true);
       setSingleLetterIndex(0);
-  }, [isSingleLetterMode]);
+      const letterViewIndex = getControlRefs().findIndex(ref => ref.current === letterViewRef.current);
+      if(letterViewIndex !== -1) setFocusedControlIndex(letterViewIndex);
+  }, [isSingleLetterMode, getControlRefs]);
 
   const handleToggleSingleLetterMode = useCallback(() => {
-      if (isSingleLetterMode) {
-        handleSetLineView();
-      } else {
-        handleSetLetterView();
-      }
+      if (isSingleLetterMode) handleSetLineView();
+      else handleSetLetterView();
   }, [isSingleLetterMode, handleSetLineView, handleSetLetterView]);
 
   const handleNextLetter = useCallback(() => {
@@ -189,18 +197,15 @@ const App: React.FC = () => {
     setSingleLetterIndex(0);
     setChartMode('display');
   }, []);
-  
-  // Effect for Mouse Mode - runs globally and captures events
-  useEffect(() => {
-    const CURSOR_SPEED = 20;
 
-    const handleGlobalKeyDown = (event: KeyboardEvent) => {
-      // Toggle mouse mode with 'm' key
+  // --- CENTRALIZED KEYDOWN HANDLER ---
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // --- Mouse Mode Handler (runs first) ---
       if (event.key.toLowerCase() === 'm') {
         event.preventDefault();
-        event.stopImmediatePropagation();
         setIsMouseMode(prev => {
-          if (!prev) { // When turning on, reset cursor position
+          if (!prev) {
             setCursorPosition({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
           }
           return !prev;
@@ -210,148 +215,128 @@ const App: React.FC = () => {
 
       if (isMouseMode) {
         event.preventDefault();
-        event.stopImmediatePropagation(); // This stops other listeners on window (e.g., in other components)
-
+        const CURSOR_SPEED = 20;
         switch (event.key) {
-          case 'ArrowUp':
-            setCursorPosition(prev => ({ ...prev, y: Math.max(0, prev.y - CURSOR_SPEED) }));
-            break;
-          case 'ArrowDown':
-            setCursorPosition(prev => ({ ...prev, y: Math.min(window.innerHeight - 1, prev.y + CURSOR_SPEED) }));
-            break;
-          case 'ArrowLeft':
-            setCursorPosition(prev => ({ ...prev, x: Math.max(0, prev.x - CURSOR_SPEED) }));
-            break;
-          case 'ArrowRight':
-            setCursorPosition(prev => ({ ...prev, x: Math.min(window.innerWidth - 1, prev.x + CURSOR_SPEED) }));
-            break;
-          case 'Enter':
-          case ' ':
+          case 'ArrowUp': setCursorPosition(prev => ({ ...prev, y: Math.max(0, prev.y - CURSOR_SPEED) })); break;
+          case 'ArrowDown': setCursorPosition(prev => ({ ...prev, y: Math.min(window.innerHeight - 1, prev.y + CURSOR_SPEED) })); break;
+          case 'ArrowLeft': setCursorPosition(prev => ({ ...prev, x: Math.max(0, prev.x - CURSOR_SPEED) })); break;
+          case 'ArrowRight': setCursorPosition(prev => ({ ...prev, x: Math.min(window.innerWidth - 1, prev.x + CURSOR_SPEED) })); break;
+          case 'Enter': case ' ':
             const elem = document.elementFromPoint(cursorPosition.x, cursorPosition.y);
-            if (elem instanceof HTMLElement) {
-              elem.click();
-            }
-            break;
-          default:
+            if (elem instanceof HTMLElement) elem.click();
             break;
         }
+        return; // Stop further processing if in mouse mode
       }
-    };
-    
-    // Use capture phase to ensure this listener runs before others
-    window.addEventListener('keydown', handleGlobalKeyDown, true);
 
-    return () => {
-      window.removeEventListener('keydown', handleGlobalKeyDown, true);
-    };
-  }, [isMouseMode, cursorPosition]);
-
-
-  useEffect(() => {
-    if (view !== 'chart') return;
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (chartMode === 'display') {
-        switch (event.key) {
-          case 'ArrowUp':
-            event.preventDefault();
-            handleLineChange('decrease');
-            break;
-          case 'ArrowDown':
-            event.preventDefault();
-            handleLineChange('increase');
-            break;
-          case 'ArrowLeft':
-            if (isSingleLetterMode) {
-              event.preventDefault();
-              handlePreviousLetter();
-            }
-            break;
-          case 'ArrowRight':
-            if (isSingleLetterMode) {
-              event.preventDefault();
-              handleNextLetter();
-            } else {
-              event.preventDefault();
-              handleSetLetterView();
-            }
-            break;
-          case 'Enter':
-            event.preventDefault();
-            handleToggleSingleLetterMode();
-            break;
-          case 'f':
-          case 'F':
-            event.preventDefault();
-            handleToggleFullscreen();
-            break;
-          case 'Escape':
-            event.preventDefault();
-            if (!isFullscreen) {
-              setChartMode('controls');
-              setFocusedControlIndex(0);
-            }
-            break;
-          default:
-            break;
+      // --- View-based Handlers ---
+      switch (view) {
+        case 'landing': {
+          const landingRefs = getLandingRefs();
+          const focusableItemsCount = landingRefs.length;
+          switch (event.key) {
+            case 'ArrowRight': event.preventDefault(); setLandingFocusedIndex(prev => (prev + 1) % focusableItemsCount); break;
+            case 'ArrowLeft': event.preventDefault(); setLandingFocusedIndex(prev => (prev - 1 + focusableItemsCount) % focusableItemsCount); break;
+            case 'Enter': case ' ': event.preventDefault(); landingRefs[landingFocusedIndex]?.current?.click(); break;
+          }
+          break;
         }
-      } else { // chartMode === 'controls'
-        const controlRefs = getControlRefs();
-        if (controlRefs.length === 0) return;
-
-        switch (event.key) {
-          case 'Escape':
-            event.preventDefault();
-            setChartMode('display');
-            break;
-          case 'ArrowRight':
-            event.preventDefault();
-            setFocusedControlIndex(prev => (prev + 1) % controlRefs.length);
-            break;
-          case 'ArrowLeft':
-            event.preventDefault();
-            setFocusedControlIndex(prev => (prev - 1 + controlRefs.length) % controlRefs.length);
-            break;
-          case 'Enter':
-          case ' ': // Handle space key as select
-            event.preventDefault();
-            const targetRef = controlRefs[focusedControlIndex];
-            targetRef?.current?.click();
-            break;
-          default:
-            break;
+        case 'chart': {
+          if (chartMode === 'display') {
+            switch (event.key) {
+              case 'ArrowUp': if (!isSingleLetterMode) { event.preventDefault(); handleLineChange('decrease'); } break;
+              case 'ArrowDown': if (!isSingleLetterMode) { event.preventDefault(); handleLineChange('increase'); } break;
+              case 'ArrowLeft': if (isSingleLetterMode) { event.preventDefault(); handlePreviousLetter(); } break;
+              case 'ArrowRight': if (isSingleLetterMode) { event.preventDefault(); handleNextLetter(); } break;
+              case 'Enter': event.preventDefault(); handleToggleSingleLetterMode(); break;
+              case 'f': case 'F': event.preventDefault(); handleToggleFullscreen(); break;
+              case 'Escape': if (!isFullscreen) { event.preventDefault(); setChartMode('controls'); setFocusedControlIndex(0); } break;
+            }
+          } else { // chartMode === 'controls'
+            const controlRefs = getControlRefs();
+            if (controlRefs.length === 0) return;
+            switch (event.key) {
+              case 'Escape': event.preventDefault(); setChartMode('display'); break;
+              case 'ArrowRight': event.preventDefault(); setFocusedControlIndex(prev => (prev + 1) % controlRefs.length); break;
+              case 'ArrowLeft': event.preventDefault(); setFocusedControlIndex(prev => (prev - 1 + controlRefs.length) % controlRefs.length); break;
+              case 'Enter': case ' ': event.preventDefault(); controlRefs[focusedControlIndex]?.current?.click(); break;
+            }
+          }
+          break;
+        }
+        case 'calibration': {
+          const calibRefs = getCalibrationRefs();
+          const focusableItemsCount = calibRefs.length;
+          switch (event.key) {
+            case 'ArrowRight': event.preventDefault(); setCalibrationFocusedIndex(prev => (prev + 1) % focusableItemsCount); break;
+            case 'ArrowLeft': event.preventDefault(); setCalibrationFocusedIndex(prev => (prev - 1 + focusableItemsCount) % focusableItemsCount); break;
+            case 'ArrowUp': event.preventDefault(); setCalibrationBoxWidth(prev => Math.max(50, prev + 1)); break;
+            case 'ArrowDown': event.preventDefault(); setCalibrationBoxWidth(prev => Math.max(50, prev - 1)); break;
+            case 'Enter': case ' ': event.preventDefault(); calibRefs[calibrationFocusedIndex]?.current?.click(); break;
+          }
+          break;
         }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [view, chartMode, isSingleLetterMode, handleLineChange, handleNextLetter, handlePreviousLetter, handleSetLetterView, handleToggleSingleLetterMode, isFullscreen, handleToggleFullscreen, getControlRefs, focusedControlIndex]);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [view, isMouseMode, cursorPosition, landingFocusedIndex, calibrationFocusedIndex, calibrationBoxWidth, chartMode, isSingleLetterMode, focusedControlIndex, handleLineChange, handleNextLetter, handlePreviousLetter, handleToggleSingleLetterMode, isFullscreen, handleToggleFullscreen, getControlRefs, getLandingRefs, getCalibrationRefs]);
 
-  // Effect to manage focus on controls
+  // --- FOCUS MANAGEMENT EFFECT ---
   useEffect(() => {
-    if (view === 'chart' && chartMode === 'controls') {
-      const controlRefs = getControlRefs();
-      const targetRef = controlRefs[focusedControlIndex];
-      targetRef?.current?.focus();
-    } else if (view === 'chart' && chartMode === 'display') {
-       const activeElement = document.activeElement as HTMLElement;
-       const controlsContainer = document.querySelector('.controls-container');
-       if (activeElement && controlsContainer?.contains(activeElement)) {
-          activeElement.blur();
-       }
+    if (isMouseMode) return;
+
+    switch (view) {
+        case 'landing': getLandingRefs()[landingFocusedIndex]?.current?.focus(); break;
+        case 'calibration': getCalibrationRefs()[calibrationFocusedIndex]?.current?.focus(); break;
+        case 'chart':
+            if (chartMode === 'controls') {
+                getControlRefs()[focusedControlIndex]?.current?.focus();
+            } else {
+                const activeElement = document.activeElement as HTMLElement;
+                const controlsContainer = document.querySelector('.controls-container');
+                if (activeElement && controlsContainer?.contains(activeElement)) {
+                    activeElement.blur();
+                }
+            }
+            break;
     }
-  }, [view, chartMode, focusedControlIndex, getControlRefs]);
+  }, [view, landingFocusedIndex, calibrationFocusedIndex, chartMode, focusedControlIndex, getLandingRefs, getCalibrationRefs, getControlRefs, isMouseMode]);
+  
+  const handleAdjustCalibrationWidth = (amount: number) => {
+    setCalibrationBoxWidth(prev => Math.max(50, prev + amount));
+  };
+  
+  const handleSaveCalibration = () => {
+    const CREDIT_CARD_WIDTH_MM = 85.6;
+    const ppmm = calibrationBoxWidth / CREDIT_CARD_WIDTH_MM;
+    handleCalibrationComplete(ppmm);
+  };
 
 
   if (view === 'landing') {
-    return <LandingPage onSelectChart={handleSelectChart} onCalibrate={handleStartCalibration} />;
+    return <LandingPage 
+      onSelectChart={handleSelectChart} 
+      onCalibrate={handleStartCalibration} 
+      snellenCardRef={snellenCardRef}
+      hindiCardRef={hindiCardRef}
+      cChartCardRef={cChartCardRef}
+      calibrateButtonRef={calibrateButtonRef}
+    />;
   }
   
   if (view === 'calibration') {
-    return <CalibrationPage onCalibrationComplete={handleCalibrationComplete} onBack={() => setView('landing')} />;
+    return <CalibrationPage 
+      onSave={handleSaveCalibration} 
+      onBack={() => setView('landing')} 
+      boxWidthPx={calibrationBoxWidth}
+      onAdjustWidth={handleAdjustCalibrationWidth}
+      backRef={calibBackRef}
+      minusRef={calibMinusRef}
+      plusRef={calibPlusRef}
+      saveRef={calibSaveRef}
+    />;
   }
   
   const isAtFirstLetterOverall = currentLineIndex === 0 && singleLetterIndex === 0;
@@ -361,10 +346,7 @@ const App: React.FC = () => {
     <main className="bg-white text-black h-screen w-screen flex flex-col items-center justify-center font-sans overflow-hidden">
       {isMouseMode && <VirtualCursor position={cursorPosition} />}
       {isMouseMode && (
-        <div 
-          className="fixed bottom-4 right-4 bg-black/70 backdrop-blur-sm text-white text-lg px-4 py-2 rounded-lg shadow-lg z-[9998]"
-          aria-live="polite"
-        >
+        <div className="fixed bottom-4 right-4 bg-black/70 backdrop-blur-sm text-white text-lg px-4 py-2 rounded-lg shadow-lg z-[9998]" aria-live="polite">
           Mouse Mode <span className="font-mono bg-white/20 px-2 py-1 rounded">M</span>
         </div>
       )}
@@ -386,6 +368,7 @@ const App: React.FC = () => {
           isMinLine={currentLineIndex === 0}
           isMaxLine={currentLineIndex === chartData.length - 1}
           isSingleLetterMode={isSingleLetterMode}
+          onSetLineView={handleSetLineView}
           onSetLetterView={handleSetLetterView}
           onPreviousLetter={handlePreviousLetter}
           onNextLetter={handleNextLetter}
@@ -399,6 +382,8 @@ const App: React.FC = () => {
           snellenRef={snellenRef}
           hindiRef={hindiRef}
           cChartRef={cChartRef}
+          lineViewRef={lineViewRef}
+          letterViewRef={letterViewRef}
           sizeMinusRef={sizeMinusRef}
           sizePlusRef={sizePlusRef}
           letterPrevRef={letterPrevRef}
