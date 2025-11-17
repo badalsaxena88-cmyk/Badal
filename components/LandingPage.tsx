@@ -1,5 +1,6 @@
 import React from 'react';
 import { ChartType } from '../types';
+import { EyeIcon } from './icons';
 
 interface LandingPageProps {
   onSelectChart: (type: ChartType) => void;
@@ -48,7 +49,12 @@ const LandingPage: React.FC<LandingPageProps> = ({
 
   return (
     <div className="bg-white text-black h-screen w-screen flex flex-col items-center justify-center font-sans overflow-hidden p-8">
-      <h1 className="text-5xl md:text-7xl mb-16 font-bold text-center">Bharat Optical Works</h1>
+      <div className="flex items-center justify-center gap-4 md:gap-6 mb-16">
+        <EyeIcon />
+        <h1 className="text-5xl md:text-7xl font-bold text-center bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent select-none">
+          Bharat Optical Works
+        </h1>
+      </div>
       <div className="flex flex-col md:flex-row items-center justify-center gap-8 md:gap-16">
         {chartOptions.map((chart, index) => (
           <ChartCard
