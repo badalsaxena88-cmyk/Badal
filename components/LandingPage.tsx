@@ -7,6 +7,7 @@ interface LandingPageProps {
   onCalibrate: () => void;
   snellenCardRef: React.Ref<HTMLButtonElement>;
   hindiCardRef: React.Ref<HTMLButtonElement>;
+  numericCardRef: React.Ref<HTMLButtonElement>;
   cChartCardRef: React.Ref<HTMLButtonElement>;
   calibrateButtonRef: React.Ref<HTMLButtonElement>;
 }
@@ -34,6 +35,7 @@ const ChartCard = React.forwardRef<HTMLButtonElement, ChartCardProps>(
 const chartOptions = [
   { type: ChartType.Snellen, title: 'English', character: 'A', fontClass: 'font-serif' },
   { type: ChartType.Hindi, title: 'Hindi', character: 'र', fontClass: '' },
+  { type: ChartType.Numeric, title: 'Numeric', character: '8', fontClass: 'font-mono' },
   { type: ChartType.CChart, title: 'C Chart', character: 'C', fontClass: 'font-serif' },
 ];
 
@@ -42,10 +44,11 @@ const LandingPage: React.FC<LandingPageProps> = ({
   onCalibrate,
   snellenCardRef,
   hindiCardRef,
+  numericCardRef,
   cChartCardRef,
   calibrateButtonRef
 }) => {
-  const chartRefs = [snellenCardRef, hindiCardRef, cChartCardRef];
+  const chartRefs = [snellenCardRef, hindiCardRef, numericCardRef, cChartCardRef];
 
   return (
     <div className="bg-white text-black h-screen w-screen flex flex-col items-center justify-center font-sans overflow-hidden p-8">

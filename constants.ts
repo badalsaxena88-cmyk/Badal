@@ -23,6 +23,17 @@ export const HINDI_CHART: ChartLine[] = [
   { acuity: '6/6', letters: ['ट', 'म', 'ग', 'प', 'त'], size: 8.9, lineHeight: 'leading-[1.1]' },
 ];
 
+export const NUMERIC_CHART: ChartLine[] = [
+  { acuity: '6/60', letters: ['8'], size: 88.7, lineHeight: 'leading-[1.1]' },
+  { acuity: '6/36', letters: ['5', '6'], size: 53.2, lineHeight: 'leading-[1.1]' },
+  { acuity: '6/24', letters: ['9', '3', '8'], size: 35.5, lineHeight: 'leading-[1.1]' },
+  { acuity: '6/18', letters: ['6', '5', '9', '3'], size: 26.6, lineHeight: 'leading-[1.1]' },
+  { acuity: '6/12', letters: ['8', '9', '5', '6', '3'], size: 17.7, lineHeight: 'leading-[1.1]' },
+  { acuity: '6/9', letters: ['3', '6', '8', '5', '9', '6'], size: 13.3, lineHeight: 'leading-[1.1]' },
+  { acuity: '6/6', letters: ['9', '5', '3', '8', '6', '5', '9'], size: 8.9, lineHeight: 'leading-[1.1]' },
+  { acuity: '6/5', letters: ['5', '8', '6', '9', '3', '6', '8', '5'], size: 7.4, lineHeight: 'leading-[1.1]' },
+];
+
 export const C_CHART: ChartLine[] = [
   { acuity: '6/60', letters: ['C'], size: 88.7, lineHeight: 'leading-[1.1]' },
   { acuity: '6/36', letters: ['C', 'C'], size: 53.2, lineHeight: 'leading-[1.1]' },

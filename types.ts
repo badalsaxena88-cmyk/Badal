@@ -1,6 +1,7 @@
 export enum ChartType {
   Snellen = 'snellen',
   Hindi = 'hindi',
+  Numeric = 'numeric',
   CChart = 'c-chart',
 }
 

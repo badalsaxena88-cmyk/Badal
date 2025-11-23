@@ -1,6 +1,6 @@
 import React from 'react';
 import { ChartType } from '../types';
-import { PlusIcon, MinusIcon, HomeIcon, FullscreenIcon, ExitFullscreenIcon, ResetIcon } from './icons';
+import { ArrowUpIcon, ArrowDownIcon, ArrowLeftIcon, ArrowRightIcon, HomeIcon, FullscreenIcon, ExitFullscreenIcon, ResetIcon } from './icons';
 
 interface ControlsProps {
   currentChart: ChartType;
@@ -8,27 +8,24 @@ interface ControlsProps {
   onLineChange: (direction: 'increase' | 'decrease') => void;
   isMinLine: boolean;
   isMaxLine: boolean;
-  isSingleLetterMode: boolean;
-  onSetLineView: () => void;
-  onSetLetterView: () => void;
-  onPreviousLetter: () => void;
-  onNextLetter: () => void;
-  isAtFirstLetter: boolean;
-  isAtLastLetter: boolean;
   onGoHome: () => void;
   isFullscreen: boolean;
   onToggleFullscreen: () => void;
   onResetView: () => void;
+  onPreviousLetter: () => void;
+  onNextLetter: () => void;
+  isSingleLetterMode: boolean;
+  isAtChartStart: boolean;
+  isAtChartEnd: boolean;
   homeRef: React.Ref<HTMLButtonElement>;
   snellenRef: React.Ref<HTMLButtonElement>;
   hindiRef: React.Ref<HTMLButtonElement>;
+  numericRef: React.Ref<HTMLButtonElement>;
   cChartRef: React.Ref<HTMLButtonElement>;
-  lineViewRef: React.Ref<HTMLButtonElement>;
-  letterViewRef: React.Ref<HTMLButtonElement>;
   sizeMinusRef: React.Ref<HTMLButtonElement>;
   sizePlusRef: React.Ref<HTMLButtonElement>;
-  letterPrevRef: React.Ref<HTMLButtonElement>;
-  letterNextRef: React.Ref<HTMLButtonElement>;
+  letterMinusRef: React.Ref<HTMLButtonElement>;
+  letterPlusRef: React.Ref<HTMLButtonElement>;
   fullscreenRef: React.Ref<HTMLButtonElement>;
   resetViewRef: React.Ref<HTMLButtonElement>;
 }
@@ -85,27 +82,24 @@ const Controls: React.FC<ControlsProps> = ({
   onLineChange,
   isMinLine,
   isMaxLine,
-  isSingleLetterMode,
-  onSetLineView,
-  onSetLetterView,
-  onPreviousLetter,
-  onNextLetter,
-  isAtFirstLetter,
-  isAtLastLetter,
   onGoHome,
   isFullscreen,
   onToggleFullscreen,
   onResetView,
+  onPreviousLetter,
+  onNextLetter,
+  isSingleLetterMode,
+  isAtChartStart,
+  isAtChartEnd,
   homeRef,
   snellenRef,
   hindiRef,
+  numericRef,
   cChartRef,
-  lineViewRef,
-  letterViewRef,
   sizeMinusRef,
   sizePlusRef,
-  letterPrevRef,
-  letterNextRef,
+  letterMinusRef,
+  letterPlusRef,
   fullscreenRef,
   resetViewRef
 }) => {
@@ -125,37 +119,13 @@ const Controls: React.FC<ControlsProps> = ({
           <div className="flex items-center gap-2 md:gap-4 p-1 bg-gray-200 rounded-xl">
             <ChartButton ref={snellenRef} label="English" type={ChartType.Snellen} current={currentChart} onClick={onChartChange} />
             <ChartButton ref={hindiRef} label="Hindi" type={ChartType.Hindi} current={currentChart} onClick={onChartChange} />
+            <ChartButton ref={numericRef} label="Numeric" type={ChartType.Numeric} current={currentChart} onClick={onChartChange} />
             <ChartButton ref={cChartRef} label="C Chart" type={ChartType.CChart} current={currentChart} onClick={onChartChange} />
           </div>
         </div>
 
         {/* Action Controls */}
         <div className="flex items-center gap-2 md:gap-4">
-            <div className="flex items-center gap-2 p-1 bg-gray-200 rounded-xl">
-              <button
-                  ref={lineViewRef}
-                  onClick={onSetLineView}
-                  className={`px-4 py-2 md:px-6 md:py-3 text-lg md:text-xl font-semibold rounded-lg transition-colors duration-200 focus:outline-none focus:ring-4 focus:ring-blue-500 ${
-                    !isSingleLetterMode
-                      ? 'bg-blue-600 text-white'
-                      : 'text-black hover:bg-gray-300'
-                  }`}
-              >
-                Line
-              </button>
-              <button
-                  ref={letterViewRef}
-                  onClick={onSetLetterView}
-                  className={`px-4 py-2 md:px-6 md:py-3 text-lg md:text-xl font-semibold rounded-lg transition-colors duration-200 focus:outline-none focus:ring-4 focus:ring-blue-500 ${
-                    isSingleLetterMode
-                      ? 'bg-blue-600 text-white'
-                      : 'text-black hover:bg-gray-300'
-                  }`}
-              >
-                Letter
-              </button>
-            </div>
-            
             {/* Line Controls */}
             <div className="flex items-center gap-2 p-1 bg-gray-200 rounded-xl">
                 <IconButton
@@ -164,7 +134,7 @@ const Controls: React.FC<ControlsProps> = ({
                     disabled={isMinLine}
                     ariaLabel={'Larger letters (previous line)'}
                 >
-                    <PlusIcon />
+                    <ArrowUpIcon />
                 </IconButton>
                 <IconButton
                     ref={sizeMinusRef}
@@ -172,7 +142,27 @@ const Controls: React.FC<ControlsProps> = ({
                     disabled={isMaxLine}
                     ariaLabel={'Smaller letters (next line)'}
                 >
-                    <MinusIcon />
+                    <ArrowDownIcon />
+                </IconButton>
+            </div>
+
+            {/* Letter Controls */}
+            <div className="flex items-center gap-2 p-1 bg-gray-200 rounded-xl">
+                <IconButton
+                    ref={letterMinusRef}
+                    onClick={onPreviousLetter}
+                    disabled={isSingleLetterMode && isAtChartStart}
+                    ariaLabel={'Previous letter'}
+                >
+                    <ArrowLeftIcon />
+                </IconButton>
+                <IconButton
+                    ref={letterPlusRef}
+                    onClick={onNextLetter}
+                    disabled={isSingleLetterMode && isAtChartEnd}
+                    ariaLabel={'Next letter'}
+                >
+                    <ArrowRightIcon />
                 </IconButton>
             </div>
             
@@ -184,26 +174,6 @@ const Controls: React.FC<ControlsProps> = ({
             >
                 <ResetIcon />
             </IconButton>
-
-            {/* Letter Controls */}
-            <div className="flex items-center gap-2 p-1 bg-gray-200 rounded-xl">
-                <IconButton
-                    ref={letterPrevRef}
-                    onClick={onPreviousLetter}
-                    disabled={!isSingleLetterMode || isAtFirstLetter}
-                    ariaLabel={'Previous letter'}
-                >
-                    <MinusIcon />
-                </IconButton>
-                <IconButton
-                    ref={letterNextRef}
-                    onClick={onNextLetter}
-                    disabled={!isSingleLetterMode || isAtLastLetter}
-                    ariaLabel={'Next letter'}
-                >
-                    <PlusIcon />
-                </IconButton>
-            </div>
 
             <IconButton
               ref={fullscreenRef}

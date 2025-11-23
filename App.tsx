@@ -1,11 +1,10 @@
-
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { ChartType } from './types';
 import EyeChart from './components/EyeChart';
 import Controls from './components/Controls';
 import LandingPage from './components/LandingPage';
 import CalibrationPage from './components/CalibrationPage';
-import { SNELLEN_CHART, HINDI_CHART, C_CHART } from './constants';
+import { SNELLEN_CHART, HINDI_CHART, C_CHART, NUMERIC_CHART } from './constants';
 import VirtualCursor from './components/VirtualCursor';
 
 const App: React.FC = () => {
@@ -38,19 +37,19 @@ const App: React.FC = () => {
   const homeRef = useRef<HTMLButtonElement>(null);
   const snellenRef = useRef<HTMLButtonElement>(null);
   const hindiRef = useRef<HTMLButtonElement>(null);
+  const numericRef = useRef<HTMLButtonElement>(null);
   const cChartRef = useRef<HTMLButtonElement>(null);
-  const lineViewRef = useRef<HTMLButtonElement>(null);
-  const letterViewRef = useRef<HTMLButtonElement>(null);
   const sizeMinusRef = useRef<HTMLButtonElement>(null);
   const sizePlusRef = useRef<HTMLButtonElement>(null);
+  const letterMinusRef = useRef<HTMLButtonElement>(null);
+  const letterPlusRef = useRef<HTMLButtonElement>(null);
   const resetViewRef = useRef<HTMLButtonElement>(null);
-  const letterPrevRef = useRef<HTMLButtonElement>(null);
-  const letterNextRef = useRef<HTMLButtonElement>(null);
   const fullscreenRef = useRef<HTMLButtonElement>(null);
 
   // Landing Page Refs
   const snellenCardRef = useRef<HTMLButtonElement>(null);
   const hindiCardRef = useRef<HTMLButtonElement>(null);
+  const numericCardRef = useRef<HTMLButtonElement>(null);
   const cChartCardRef = useRef<HTMLButtonElement>(null);
   const calibrateButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -61,11 +60,11 @@ const App: React.FC = () => {
   const calibSaveRef = useRef<HTMLButtonElement>(null);
 
   const getControlRefs = useCallback(() => {
-    const refs = [homeRef, snellenRef, hindiRef, cChartRef, lineViewRef, letterViewRef, sizePlusRef, sizeMinusRef, resetViewRef, letterPrevRef, letterNextRef, fullscreenRef];
+    const refs = [homeRef, snellenRef, hindiRef, numericRef, cChartRef, sizePlusRef, sizeMinusRef, letterMinusRef, letterPlusRef, resetViewRef, fullscreenRef];
     return refs.map(ref => ref.current ? ref : null).filter(Boolean);
   }, []);
   
-  const getLandingRefs = useCallback(() => [snellenCardRef, hindiCardRef, cChartCardRef, calibrateButtonRef], []);
+  const getLandingRefs = useCallback(() => [snellenCardRef, hindiCardRef, numericCardRef, cChartCardRef, calibrateButtonRef], []);
   const getCalibrationRefs = useCallback(() => [calibBackRef, calibMinusRef, calibPlusRef, calibSaveRef], []);
 
 
@@ -86,7 +85,6 @@ const App: React.FC = () => {
     setPixelsPerMm(ppmm);
     localStorage.setItem('pixelsPerMm', ppmm.toString());
     setView('landing');
-    setLandingFocusedIndex(0);
   };
 
   const handleGoHome = () => {
@@ -95,7 +93,6 @@ const App: React.FC = () => {
     }
     setView('landing');
     setChartMode('display');
-    setLandingFocusedIndex(0);
   };
 
   const handleToggleFullscreen = useCallback(() => {
@@ -126,6 +123,7 @@ const App: React.FC = () => {
     switch (chartType) {
       case ChartType.Snellen: return SNELLEN_CHART;
       case ChartType.Hindi: return HINDI_CHART;
+      case ChartType.Numeric: return NUMERIC_CHART;
       case ChartType.CChart: return C_CHART;
       default: return SNELLEN_CHART;
     }
@@ -143,6 +141,7 @@ const App: React.FC = () => {
       }
     });
     setSingleLetterIndex(0);
+    setIsSingleLetterMode(false);
   }, [chartData.length]);
 
   const handleChartTypeChange = useCallback((type: ChartType) => {
@@ -156,17 +155,13 @@ const App: React.FC = () => {
     if (!isSingleLetterMode) return;
     setIsSingleLetterMode(false);
     setSingleLetterIndex(0);
-    const lineViewIndex = getControlRefs().findIndex(ref => ref.current === lineViewRef.current);
-    if(lineViewIndex !== -1) setFocusedControlIndex(lineViewIndex);
-  }, [isSingleLetterMode, getControlRefs]);
+  }, [isSingleLetterMode]);
 
   const handleSetLetterView = useCallback(() => {
       if (isSingleLetterMode) return;
       setIsSingleLetterMode(true);
       setSingleLetterIndex(0);
-      const letterViewIndex = getControlRefs().findIndex(ref => ref.current === letterViewRef.current);
-      if(letterViewIndex !== -1) setFocusedControlIndex(letterViewIndex);
-  }, [isSingleLetterMode, getControlRefs]);
+  }, [isSingleLetterMode]);
 
   const handleToggleSingleLetterMode = useCallback(() => {
       if (isSingleLetterMode) handleSetLineView();
@@ -174,6 +169,11 @@ const App: React.FC = () => {
   }, [isSingleLetterMode, handleSetLineView, handleSetLetterView]);
 
   const handleNextLetter = useCallback(() => {
+    if (!isSingleLetterMode) {
+      setIsSingleLetterMode(true);
+      return;
+    }
+
     const currentLine = chartData[currentLineIndex];
     if (singleLetterIndex < currentLine.letters.length - 1) {
       setSingleLetterIndex(prev => prev + 1);
@@ -181,9 +181,14 @@ const App: React.FC = () => {
       setCurrentLineIndex(prev => prev + 1);
       setSingleLetterIndex(0);
     }
-  }, [currentLineIndex, singleLetterIndex, chartData]);
+  }, [isSingleLetterMode, currentLineIndex, singleLetterIndex, chartData]);
 
   const handlePreviousLetter = useCallback(() => {
+    if (!isSingleLetterMode) {
+      setIsSingleLetterMode(true);
+      return;
+    }
+
     if (singleLetterIndex > 0) {
       setSingleLetterIndex(prev => prev - 1);
     } else if (currentLineIndex > 0) {
@@ -192,7 +197,7 @@ const App: React.FC = () => {
       setCurrentLineIndex(prevLineIndex);
       setSingleLetterIndex(prevLine.letters.length - 1);
     }
-  }, [currentLineIndex, singleLetterIndex, chartData]);
+  }, [isSingleLetterMode, currentLineIndex, singleLetterIndex, chartData]);
 
   const handleResetView = useCallback(() => {
     setCurrentLineIndex(0);
@@ -236,56 +241,49 @@ const App: React.FC = () => {
       switch (view) {
         case 'landing': {
           const landingRefs = getLandingRefs();
-          const NUM_CARDS = 3;
-          const CALIBRATE_INDEX = 3;
-
+          const focusableItemsCount = landingRefs.length;
           switch (event.key) {
-            case 'ArrowRight':
-              event.preventDefault();
-              setLandingFocusedIndex(prev => {
-                if (prev < NUM_CARDS) return (prev + 1) % NUM_CARDS; // Cycle through cards
-                return prev; // Do nothing if on calibrate button
-              });
-              break;
-            case 'ArrowLeft':
-              event.preventDefault();
-              setLandingFocusedIndex(prev => {
-                if (prev < NUM_CARDS) return (prev - 1 + NUM_CARDS) % NUM_CARDS; // Cycle through cards
-                return prev; // Do nothing if on calibrate button
-              });
-              break;
-            case 'ArrowDown':
-              event.preventDefault();
-              setLandingFocusedIndex(prev => {
-                if (prev < NUM_CARDS) return CALIBRATE_INDEX; // Move from any card down to calibrate
-                return prev; // Do nothing if already on calibrate
-              });
-              break;
-            case 'ArrowUp':
-              event.preventDefault();
-              setLandingFocusedIndex(prev => {
-                if (prev === CALIBRATE_INDEX) return 1; // Move from calibrate up to middle card (index 1)
-                return prev; // Do nothing if on cards
-              });
-              break;
-            case 'Enter':
-            case ' ':
-              event.preventDefault();
-              landingRefs[landingFocusedIndex]?.current?.click();
-              break;
+            case 'ArrowRight': event.preventDefault(); setLandingFocusedIndex(prev => (prev + 1) % focusableItemsCount); break;
+            case 'ArrowLeft': event.preventDefault(); setLandingFocusedIndex(prev => (prev - 1 + focusableItemsCount) % focusableItemsCount); break;
+            case 'Enter': case ' ': event.preventDefault(); landingRefs[landingFocusedIndex]?.current?.click(); break;
           }
           break;
         }
         case 'chart': {
           if (chartMode === 'display') {
             switch (event.key) {
-              case 'ArrowUp': if (!isSingleLetterMode) { event.preventDefault(); handleLineChange('decrease'); } break;
-              case 'ArrowDown': if (!isSingleLetterMode) { event.preventDefault(); handleLineChange('increase'); } break;
-              case 'ArrowLeft': if (isSingleLetterMode) { event.preventDefault(); handlePreviousLetter(); } break;
-              case 'ArrowRight': if (isSingleLetterMode) { event.preventDefault(); handleNextLetter(); } break;
-              case 'Enter': event.preventDefault(); handleToggleSingleLetterMode(); break;
-              case 'f': case 'F': event.preventDefault(); handleToggleFullscreen(); break;
-              case 'Escape': if (!isFullscreen) { event.preventDefault(); setChartMode('controls'); setFocusedControlIndex(0); } break;
+              case 'ArrowUp':
+                event.preventDefault();
+                handleLineChange('decrease');
+                break;
+              case 'ArrowDown':
+                event.preventDefault();
+                handleLineChange('increase');
+                break;
+              case 'ArrowLeft':
+                event.preventDefault();
+                handlePreviousLetter();
+                break;
+              case 'ArrowRight':
+                event.preventDefault();
+                handleNextLetter();
+                break;
+              case 'Enter':
+                event.preventDefault();
+                handleToggleSingleLetterMode();
+                break;
+              case 'f':
+              case 'F':
+                event.preventDefault();
+                handleToggleFullscreen();
+                break;
+              case 'Escape':
+                if (!isFullscreen) {
+                  event.preventDefault();
+                  setChartMode('controls');
+                  setFocusedControlIndex(0);
+                }
+                break;
             }
           } else { // chartMode === 'controls'
             const controlRefs = getControlRefs();
@@ -349,6 +347,10 @@ const App: React.FC = () => {
     handleCalibrationComplete(ppmm);
   };
 
+  const isAtChartStart = currentLineIndex === 0 && singleLetterIndex === 0;
+  const lastLineIndex = chartData.length - 1;
+  const isAtChartEnd = currentLineIndex === lastLineIndex && singleLetterIndex === chartData[lastLineIndex].letters.length - 1;
+
 
   if (view === 'landing') {
     return <LandingPage 
@@ -356,6 +358,7 @@ const App: React.FC = () => {
       onCalibrate={handleStartCalibration} 
       snellenCardRef={snellenCardRef}
       hindiCardRef={hindiCardRef}
+      numericCardRef={numericCardRef}
       cChartCardRef={cChartCardRef}
       calibrateButtonRef={calibrateButtonRef}
     />;
@@ -374,9 +377,6 @@ const App: React.FC = () => {
     />;
   }
   
-  const isAtFirstLetterOverall = currentLineIndex === 0 && singleLetterIndex === 0;
-  const isAtLastLetterOverall = currentLineIndex === chartData.length - 1 && singleLetterIndex === chartData[currentLineIndex].letters.length - 1;
-
   return (
     <main className="bg-white text-black h-screen w-screen flex flex-col items-center justify-center font-sans overflow-hidden">
       {isMouseMode && <VirtualCursor position={cursorPosition} />}
@@ -402,27 +402,24 @@ const App: React.FC = () => {
           onLineChange={handleLineChange}
           isMinLine={currentLineIndex === 0}
           isMaxLine={currentLineIndex === chartData.length - 1}
-          isSingleLetterMode={isSingleLetterMode}
-          onSetLineView={handleSetLineView}
-          onSetLetterView={handleSetLetterView}
-          onPreviousLetter={handlePreviousLetter}
-          onNextLetter={handleNextLetter}
-          isAtFirstLetter={isAtFirstLetterOverall}
-          isAtLastLetter={isAtLastLetterOverall}
           onGoHome={handleGoHome}
           isFullscreen={isFullscreen}
           onToggleFullscreen={handleToggleFullscreen}
           onResetView={handleResetView}
+          onNextLetter={handleNextLetter}
+          onPreviousLetter={handlePreviousLetter}
+          isSingleLetterMode={isSingleLetterMode}
+          isAtChartStart={isAtChartStart}
+          isAtChartEnd={isAtChartEnd}
           homeRef={homeRef}
           snellenRef={snellenRef}
           hindiRef={hindiRef}
+          numericRef={numericRef}
           cChartRef={cChartRef}
-          lineViewRef={lineViewRef}
-          letterViewRef={letterViewRef}
           sizeMinusRef={sizeMinusRef}
           sizePlusRef={sizePlusRef}
-          letterPrevRef={letterPrevRef}
-          letterNextRef={letterNextRef}
+          letterMinusRef={letterMinusRef}
+          letterPlusRef={letterPlusRef}
           fullscreenRef={fullscreenRef}
           resetViewRef={resetViewRef}
         />
